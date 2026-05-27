@@ -53,5 +53,5 @@
 - [x] 7.3 抽查任意一个章节 README（建议 `01-hello-go` 与 `15-resilience-perf` 各一）与一个 capstone README，确认模板字段齐全
 - [x] 7.4 抽查 `ROADMAP.md` 的进度追踪表，确认 15 章 + 3 capstone 全部以 `- [ ]` 列出
 - [x] 7.5 运行 `openspec validate bootstrap-learning-repo --strict`（如可用），确保本 change 的 4 件产出物合规
-- [ ] 7.6 将所有产出物加入 Git 暂存区（`git add -A`），并以 `chore: bootstrap learning curriculum and repo skeleton` 作为首次 commit 信息提交
-- [ ] 7.7 执行 `git log --oneline` 与 `git status`，确认首次 commit 已就位且工作区干净
+- [x] 7.6 将所有产出物加入 Git 暂存区（`git add -A`），并以 `chore: bootstrap learning curriculum and repo skeleton` 作为首次 commit 信息提交
+- [x] 7.7 执行 `git log --oneline` 与 `git status`，确认首次 commit 已就位且工作区干净
