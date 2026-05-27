@@ -1,0 +1,36 @@
+# ───── Go 编译产物 ─────
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# ───── Go 测试与覆盖率 ─────
+*.test
+*.out
+*.prof
+coverage.txt
+coverage.html
+coverage.out
+
+# ───── 依赖与构建 ─────
+/vendor/
+/dist/
+/build/
+
+# ───── IDE / 编辑器 ─────
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ───── 操作系统 ─────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ───── 本地环境 ─────
+.env
+.env.local
+*.local
