@@ -13,14 +13,31 @@
 - 包（package）、import 路径、`main` 函数
 - VS Code / GoLand 基础配置与调试器
 
-## 📦 本章产出（待 OpenSpec change 填充）
+## 📦 本章产出
 
-> ⚠️ 当前本章内容尚未实现。
->
-> 请通过 `/opsx-propose chapter-01-hello-go` 来落地本章内容。落地后此处会列出：
-> - 示例代码 .go 文件清单
-> - 练习题清单
-> - 测试用例清单
+**示例代码（`.go` 文件清单）：**
+
+| 文件 | 职责 |
+| ---- | ---- |
+| `main.go` | `package main` 入口，调用 `greeting.Greet` 并 `fmt.Println` 输出；含纯函数 `resolveName` 决定问候对象 |
+| `main_test.go` | `package main`，表驱动测试 `resolveName`（不捕获 stdout） |
+| `greeting/greeting.go` | `package greeting`，导出 `Greet(name)`，含未导出常量 `defaultName` 演示可见性 |
+| `greeting/greeting_test.go` | `package greeting`，表驱动 + `t.Run` 测试 `Greet` |
+
+`greeting` 子包的完整 import 路径为 `just-go/stage-1-syntax/01-hello-go/greeting`，由 `go.mod` 的 `module just-go` 前缀拼接目录路径而成。
+
+**学习材料：** [`EXERCISES.md`](./EXERCISES.md) —— 5 道由浅入深、含验收标准的练习题。
+
+**运行命令：**
+
+```bash
+# 在本章目录运行入口程序
+cd stage-1-syntax/01-hello-go
+go run .
+
+# 在仓库根目录运行本章测试
+go test ./stage-1-syntax/01-hello-go/...
+```
 
 ## 🔗 前置依赖
 
@@ -32,9 +49,9 @@
 - [Effective Go § Introduction](https://go.dev/doc/effective_go)
 - [How to Write Go Code](https://go.dev/doc/code)
 
-## ✅ 自测清单（落地后填充）
+## ✅ 自测清单
 
-- [ ] 能解释 `go run` 和 `go build` 的区别
-- [ ] 能说清楚 `go.mod` / `go.sum` 各自的作用
-- [ ] 能用 IDE 启动断点调试
-- [ ] 能独立创建一个新模块并跑通 `main` 函数
+- [ ] 能在 `stage-1-syntax/01-hello-go/` 运行 `go run .` 并看到问候语输出
+- [ ] 能解释 `main` 包与 `greeting` 包的 import 路径（`just-go` 前缀 + 目录路径）如何拼成
+- [ ] 能说出导出标识符（首字母大写）与未导出标识符（首字母小写）的区别
+- [ ] 能在仓库根运行 `go test ./stage-1-syntax/01-hello-go/...` 并看到全部 PASS

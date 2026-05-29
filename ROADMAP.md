@@ -337,7 +337,7 @@
 
 ### 阶段一：Go 语法精通
 
-- [ ] 01-hello-go
+- [x] 01-hello-go
 - [ ] 02-language-basics
 - [ ] 03-composite-types
 - [ ] 04-interface-error
