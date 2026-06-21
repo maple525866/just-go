@@ -48,6 +48,19 @@ just-go/
 
 详见 [`ROADMAP.md` 的进度追踪表](./ROADMAP.md#进度追踪)。
 
+## 本地 CI 对齐
+
+PR 合并前，GitHub Actions 会自动运行与本地等价的检查。在仓库根目录执行：
+
+```bash
+go vet ./...
+go test -race -count=1 ./...
+go build ./...
+golangci-lint run
+```
+
+安装 golangci-lint：[官方安装指引](https://golangci-lint.run/docs/welcome/install/)。
+
 ## License
 
 [MIT](./LICENSE)

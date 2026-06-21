@@ -16,17 +16,26 @@ func TestFormatScore(t *testing.T) {
 	}{
 		{
 			name: "满分边界",
-			in:   struct{ subject string; score int }{"Math", 100},
+			in: struct {
+				subject string
+				score   int
+			}{"Math", 100},
 			wantContains: []string{"Math: 100", "100.0%", "[pass]"},
 		},
 		{
 			name: "及格线",
-			in:   struct{ subject string; score int }{"English", 60},
+			in: struct {
+				subject string
+				score   int
+			}{"English", 60},
 			wantContains: []string{"English: 60", "60.0%", "[pass]"},
 		},
 		{
 			name: "不及格",
-			in:   struct{ subject string; score int }{"Go", 59},
+			in: struct {
+				subject string
+				score   int
+			}{"Go", 59},
 			wantContains: []string{"Go: 59", "59.0%", "[fail]"},
 		},
 	}
