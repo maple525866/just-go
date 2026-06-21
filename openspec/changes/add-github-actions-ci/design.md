@@ -55,7 +55,7 @@
 
 - `actions/checkout@v4`
 - `actions/setup-go@v5`
-- `golangci/golangci-lint-action@v6`（pin golangci-lint 版本如 v2.1.6）
+- `golangci/golangci-lint-action@v7`（pin golangci-lint 版本如 v2.1.6）
 
 **理由**：避免上游 action 或 linter 规则突变导致 CI 无故失败。
 

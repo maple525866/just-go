@@ -17,5 +17,5 @@
 ## 4. 验证
 
 - [x] 4.1 本地执行 `go vet ./...`、`go test -race -count=1 ./...`、`go build ./...`、`golangci-lint run`，全部通过
-- [ ] 4.2 push 到 GitHub 后确认 workflow 在 PR 和 main push 上均绿灯
+- [x] 4.2 push 到 GitHub 后确认 workflow 在 PR 和 main push 上均绿灯
 - [x] 4.3 运行 `openspec validate add-github-actions-ci --strict`，确认本 change 制品合规
