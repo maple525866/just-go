@@ -37,15 +37,17 @@ func Run(args []string, stdout, stderr io.Writer) error {
 		stderr = io.Discard
 	}
 	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
-		fmt.Fprint(stdout, Usage())
-		return nil
+		_, err := fmt.Fprint(stdout, Usage())
+		return err
 	}
 
 	switch args[0] {
 	case "add", "list", "done", "delete", "clear":
 		// Valid commands continue below and may need storage.
 	default:
-		fmt.Fprint(stderr, Usage())
+		if _, err := fmt.Fprint(stderr, Usage()); err != nil {
+			return err
+		}
 		return fmt.Errorf("%w: %s", ErrInvalidCommand, args[0])
 	}
 
@@ -66,9 +68,11 @@ func Run(args []string, stdout, stderr io.Writer) error {
 		if err := st.Save(list); err != nil {
 			return err
 		}
-		fmt.Fprintf(stdout, "added #%d %s\n", task.ID, task.Title)
+		_, err = fmt.Fprintf(stdout, "added #%d %s\n", task.ID, task.Title)
+		return err
 	case "list":
-		fmt.Fprint(stdout, Render(list))
+		_, err := fmt.Fprint(stdout, Render(list))
+		return err
 	case "done":
 		id, err := parseID(args)
 		if err != nil {
@@ -81,7 +85,8 @@ func Run(args []string, stdout, stderr io.Writer) error {
 		if err := st.Save(list); err != nil {
 			return err
 		}
-		fmt.Fprintf(stdout, "done #%d %s\n", task.ID, task.Title)
+		_, err = fmt.Fprintf(stdout, "done #%d %s\n", task.ID, task.Title)
+		return err
 	case "delete":
 		id, err := parseID(args)
 		if err != nil {
@@ -94,13 +99,15 @@ func Run(args []string, stdout, stderr io.Writer) error {
 		if err := st.Save(list); err != nil {
 			return err
 		}
-		fmt.Fprintf(stdout, "deleted #%d %s\n", task.ID, task.Title)
+		_, err = fmt.Fprintf(stdout, "deleted #%d %s\n", task.ID, task.Title)
+		return err
 	case "clear":
 		count := list.Clear()
 		if err := st.Save(list); err != nil {
 			return err
 		}
-		fmt.Fprintf(stdout, "cleared %d tasks\n", count)
+		_, err := fmt.Fprintf(stdout, "cleared %d tasks\n", count)
+		return err
 	}
 	return nil
 }
