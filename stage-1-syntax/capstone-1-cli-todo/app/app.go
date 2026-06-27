@@ -41,6 +41,14 @@ func Run(args []string, stdout, stderr io.Writer) error {
 		return nil
 	}
 
+	switch args[0] {
+	case "add", "list", "done", "delete", "clear":
+		// Valid commands continue below and may need storage.
+	default:
+		fmt.Fprint(stderr, Usage())
+		return fmt.Errorf("%w: %s", ErrInvalidCommand, args[0])
+	}
+
 	st := store.Store{Path: DefaultPath()}
 	list, err := st.Load()
 	if err != nil {
@@ -93,9 +101,6 @@ func Run(args []string, stdout, stderr io.Writer) error {
 			return err
 		}
 		fmt.Fprintf(stdout, "cleared %d tasks\n", count)
-	default:
-		fmt.Fprint(stderr, Usage())
-		return fmt.Errorf("%w: %s", ErrInvalidCommand, args[0])
 	}
 	return nil
 }

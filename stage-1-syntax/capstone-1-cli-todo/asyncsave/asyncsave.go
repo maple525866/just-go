@@ -44,14 +44,16 @@ func (w *Worker) loop() {
 
 // Submit queues one save request and waits for that save to finish.
 func (w *Worker) Submit(list todo.List) error {
+	ack := make(chan error, 1)
+
 	w.mu.Lock()
-	closed := w.closed
-	w.mu.Unlock()
-	if closed {
+	if w.closed {
+		w.mu.Unlock()
 		return ErrClosed
 	}
-	ack := make(chan error, 1)
 	w.jobs <- request{list: list, ack: ack}
+	w.mu.Unlock()
+
 	return <-ack
 }
 

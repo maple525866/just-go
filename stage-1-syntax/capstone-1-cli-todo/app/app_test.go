@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -18,6 +19,7 @@ func TestRunCommands(t *testing.T) {
 		wantOut    []string
 		wantErr    error
 		wantErrOut string
+		seedStore  string
 	}{
 		{
 			name:     "add list done delete clear",
@@ -36,6 +38,13 @@ func TestRunCommands(t *testing.T) {
 			wantErrOut: "Usage:",
 		},
 		{
+			name:       "invalid command ignores corrupt store",
+			commands:   [][]string{{"wat"}},
+			wantErr:    ErrInvalidCommand,
+			wantErrOut: "Usage:",
+			seedStore:  "not-json",
+		},
+		{
 			name:     "missing title",
 			commands: [][]string{{"add"}},
 			wantErr:  todo.ErrMissingTitle,
@@ -44,7 +53,13 @@ func TestRunCommands(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv(dataFileEnv, filepath.Join(t.TempDir(), "todos.json"))
+			path := filepath.Join(t.TempDir(), "todos.json")
+			t.Setenv(dataFileEnv, path)
+			if tt.seedStore != "" {
+				if err := os.WriteFile(path, []byte(tt.seedStore), 0o644); err != nil {
+					t.Fatalf("seed store: %v", err)
+				}
+			}
 			var out, errOut bytes.Buffer
 			var err error
 			for _, command := range tt.commands {
