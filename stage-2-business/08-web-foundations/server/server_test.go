@@ -123,6 +123,7 @@ func TestNewRouterErrorRequests(t *testing.T) {
 		wantCode   string
 	}{
 		{name: "invalid JSON", method: http.MethodPost, path: "/api/articles", body: `{`, wantStatus: http.StatusBadRequest, wantCode: "invalid_json"},
+		{name: "trailing JSON garbage", method: http.MethodPost, path: "/api/articles", body: `{"title":"Testing handlers","body":"httptest makes handlers easy to verify.","tags":["test"]} true`, wantStatus: http.StatusBadRequest, wantCode: "invalid_json"},
 		{name: "validation failure", method: http.MethodPost, path: "/api/articles", body: `{"title":"","body":"short"}`, wantStatus: http.StatusUnprocessableEntity, wantCode: "validation_failed"},
 		{name: "not found", method: http.MethodGet, path: "/api/articles/missing", wantStatus: http.StatusNotFound, wantCode: "article_not_found"},
 	}

@@ -2,6 +2,8 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 
@@ -62,6 +64,10 @@ func createArticle(articles *store.MemoryStore, validator *validation.Validator)
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(&request); err != nil {
 			response.Error(w, http.StatusBadRequest, "invalid_json", "request body must be valid JSON", nil)
+			return
+		}
+		if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+			response.Error(w, http.StatusBadRequest, "invalid_json", "request body must contain a single JSON object", nil)
 			return
 		}
 
