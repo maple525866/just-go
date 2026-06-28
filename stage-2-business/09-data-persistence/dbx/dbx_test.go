@@ -46,6 +46,26 @@ func TestConfigurePoolAppliesSettings(t *testing.T) {
 	}
 }
 
+func TestOpenMemorySharesSchemaAcrossConnections(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+	ConfigurePool(db, PoolConfig{MaxOpenConns: 2, MaxIdleConns: 2, ConnMaxLifetime: time.Minute})
+	if err := ApplyMigration(db, "../migrations/001_create_articles.sql"); err != nil {
+		t.Fatalf("ApplyMigration returned error: %v", err)
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("Begin returned error: %v", err)
+	}
+	defer tx.Rollback()
+
+	_, err = db.Exec(`INSERT INTO articles (title, body, author) VALUES (?, ?, ?)`, "shared schema", "second connection sees migration", "gopher")
+	if err != nil {
+		t.Fatalf("insert through second connection failed: %v", err)
+	}
+}
+
 func openTestDB(t *testing.T) *sql.DB {
 	t.Helper()
 	db, err := OpenMemory()

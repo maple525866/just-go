@@ -16,9 +16,9 @@ type PoolConfig struct {
 	ConnMaxLifetime time.Duration
 }
 
-// OpenMemory opens a SQLite memory database for deterministic local tests.
+// OpenMemory opens a shared SQLite memory database for deterministic local tests.
 func OpenMemory() (*sql.DB, error) {
-	return sql.Open("sqlite3", ":memory:")
+	return sql.Open("sqlite3", "file:just_go_stage09?mode=memory&cache=shared")
 }
 
 // ConfigurePool applies connection-pool settings to a database handle.

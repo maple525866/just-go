@@ -63,6 +63,29 @@ func TestPreloadTags(t *testing.T) {
 	}
 }
 
+func TestOpenMemorySharesSchemaAcrossConnections(t *testing.T) {
+	db := openGormDB(t)
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("DB returned error: %v", err)
+	}
+	sqlDB.SetMaxOpenConns(2)
+	sqlDB.SetMaxIdleConns(2)
+	if err := AutoMigrate(db); err != nil {
+		t.Fatalf("AutoMigrate returned error: %v", err)
+	}
+
+	tx := db.Begin()
+	if tx.Error != nil {
+		t.Fatalf("Begin returned error: %v", tx.Error)
+	}
+	defer tx.Rollback()
+
+	if err := db.Create(&User{Name: "Second connection"}).Error; err != nil {
+		t.Fatalf("Create through second connection returned error: %v", err)
+	}
+}
+
 func openGormDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	db, err := OpenMemory()

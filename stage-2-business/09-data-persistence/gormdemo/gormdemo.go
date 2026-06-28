@@ -27,9 +27,9 @@ type Tag struct {
 	Name string `gorm:"uniqueIndex"`
 }
 
-// OpenMemory opens a GORM SQLite memory database.
+// OpenMemory opens a shared GORM SQLite memory database.
 func OpenMemory() (*gorm.DB, error) {
-	return gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	return gorm.Open(sqlite.Open("file:just_go_stage09_gorm?mode=memory&cache=shared"), &gorm.Config{})
 }
 
 // AutoMigrate creates the tables used in the examples.
