@@ -67,13 +67,42 @@ func TestCORSWritesOriginAndHandlesPreflight(t *testing.T) {
 	}
 }
 
-func TestLimiterReturnsTooManyRequests(t *testing.T) {
+func TestLimiterAllowsSequentialRequests(t *testing.T) {
 	limiter := NewLimiter(1)
 	handler := limiter.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	}))
 
-	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+	for i := 0; i < 2; i++ {
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
+		if recorder.Code != http.StatusNoContent {
+			t.Fatalf("request %d status = %d, want %d", i+1, recorder.Code, http.StatusNoContent)
+		}
+	}
+}
+
+func TestLimiterReturnsTooManyRequestsWhenCapacityIsInUse(t *testing.T) {
+	limiter := NewLimiter(1)
+	started := make(chan struct{})
+	release := make(chan struct{})
+	handler := limiter.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(started)
+		<-release
+		w.WriteHeader(http.StatusNoContent)
+	}))
+
+	firstDone := make(chan struct{})
+	go func() {
+		handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+		close(firstDone)
+	}()
+	<-started
+	t.Cleanup(func() {
+		close(release)
+		<-firstDone
+	})
+
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
 

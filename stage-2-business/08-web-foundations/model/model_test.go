@@ -13,7 +13,7 @@ func TestCreateArticleRequestValidationTags(t *testing.T) {
 	}{
 		{name: "title", got: createArticleRequestValidationTag("Title"), want: "required,max=80"},
 		{name: "body", got: createArticleRequestValidationTag("Body"), want: "required,min=10"},
-		{name: "tags", got: createArticleRequestValidationTag("Tags"), want: "dive,required,max=20"},
+		{name: "tags", got: createArticleRequestValidationTag("Tags"), want: "required,dive,required,max=20"},
 	}
 
 	for _, tt := range tests {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -76,28 +75,26 @@ func Logger(logger *slog.Logger) func(http.Handler) http.Handler {
 	}
 }
 
-// Limiter is a teaching-only fixed-capacity limiter.
+// Limiter is a teaching-only fixed-concurrency limiter.
 type Limiter struct {
-	mu        sync.Mutex
-	remaining int
+	tokens chan struct{}
 }
 
-// NewLimiter creates a limiter that allows capacity requests total.
+// NewLimiter creates a limiter that allows capacity concurrent requests.
 func NewLimiter(capacity int) *Limiter {
-	return &Limiter{remaining: capacity}
+	if capacity < 1 {
+		capacity = 1
+	}
+	return &Limiter{tokens: make(chan struct{}, capacity)}
 }
 
-// Middleware returns 429 when the teaching limiter has no remaining capacity.
+// Middleware returns 429 when the teaching limiter has no free capacity.
 func (l *Limiter) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		l.mu.Lock()
-		allowed := l.remaining > 0
-		if allowed {
-			l.remaining--
-		}
-		l.mu.Unlock()
-
-		if !allowed {
+		select {
+		case l.tokens <- struct{}{}:
+			defer func() { <-l.tokens }()
+		default:
 			response.Error(w, http.StatusTooManyRequests, "rate_limited", "too many requests", nil)
 			return
 		}

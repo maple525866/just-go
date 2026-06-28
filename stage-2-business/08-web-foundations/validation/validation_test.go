@@ -20,7 +20,7 @@ func TestValidateCreateArticleRequest(t *testing.T) {
 		{
 			name:       "missing required fields",
 			request:    model.CreateArticleRequest{},
-			wantFields: []string{"title", "body"},
+			wantFields: []string{"title", "body", "tags"},
 		},
 		{
 			name:       "invalid tag element",

@@ -12,7 +12,7 @@ type Article struct {
 type CreateArticleRequest struct {
 	Title string   `json:"title" validate:"required,max=80"`
 	Body  string   `json:"body" validate:"required,min=10"`
-	Tags  []string `json:"tags" validate:"dive,required,max=20"`
+	Tags  []string `json:"tags" validate:"required,dive,required,max=20"`
 }
 
 // ArticleListResponse wraps list endpoints so future pagination fields can be
