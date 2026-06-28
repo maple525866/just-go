@@ -16,10 +16,12 @@ func WriteReadTempFile(content string) (string, error) {
 		return "", err
 	}
 	name := file.Name()
-	defer os.Remove(name)
+	defer func() {
+		_ = os.Remove(name)
+	}()
 
 	if _, err := file.WriteString(content); err != nil {
-		file.Close()
+		_ = file.Close()
 		return "", err
 	}
 	if err := file.Close(); err != nil {
