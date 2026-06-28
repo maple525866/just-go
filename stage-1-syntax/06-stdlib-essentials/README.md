@@ -16,11 +16,35 @@
 - `time`：时间、定时器、ticker
 - `reflect`：反射（只学读，不滥用）
 
-## 📦 本章产出（待 OpenSpec change 填充）
+## 📦 本章产出
 
-> ⚠️ 当前本章内容尚未实现。
->
-> 请通过 `/opsx-propose chapter-06-stdlib-essentials` 来落地本章内容。
+本章提供一组可运行、可测试的标准库精要示例：
+
+```text
+stage-1-syntax/06-stdlib-essentials/
+├── main.go               # 组装标准库精要学习报告
+├── main_test.go          # 入口报告测试
+├── format/               # fmt.Sprintf / fmt.Fprintf
+├── stream/               # io.Reader / io.Writer / io.Copy / bufio.Scanner
+├── system/               # os 临时文件 / 环境变量 / os/exec
+├── web/                  # net/http handler / client / httptest
+├── codec/                # encoding/json / encoding/xml round trip
+├── clock/                # time.Format / Duration / Ticker
+├── inspect/              # reflect 只读类型、字段、tag 检查
+└── EXERCISES.md          # 课后练习与验收标准
+```
+
+运行示例：
+
+```bash
+go run ./stage-1-syntax/06-stdlib-essentials
+```
+
+运行本章测试：
+
+```bash
+go test ./stage-1-syntax/06-stdlib-essentials/...
+```
 
 ## 🔗 前置依赖
 
@@ -31,10 +55,14 @@
 - [pkg.go.dev/std](https://pkg.go.dev/std)
 - 《Go 程序设计语言》第 5、10、11、12 章
 
-## ✅ 自测清单（落地后填充）
+## ✅ 自测清单
 
+- [ ] 能用 `fmt.Sprintf` 与 `fmt.Fprintf` 生成格式化输出
 - [ ] 能用 `io.Reader` / `io.Writer` 写一个流式拷贝程序
-- [ ] 能用 `encoding/json` 实现自定义 Marshal / Unmarshal
-- [ ] 能用 `time.Ticker` 实现一个心跳器
-- [ ] 能用 `os/exec` 执行外部命令并管道传递输出
-- [ ] 能说出 `reflect` 的合理用例与禁用场景
+- [ ] 能用 `bufio.Scanner` 按行读取文本
+- [ ] 能用 `os` 安全读写临时文件，并读取环境变量
+- [ ] 能用 `os/exec` 执行外部命令并处理输出 / 错误
+- [ ] 能用 `net/http` 编写 handler，并用 `httptest` 做本地测试
+- [ ] 能用 `encoding/json` 与 `encoding/xml` 完成结构体 round trip
+- [ ] 能用 `time.Format`、`time.Duration`、`time.Ticker` 处理时间场景
+- [ ] 能用 `reflect` 只读检查结构体字段与 tag，并说出反射的禁用场景
