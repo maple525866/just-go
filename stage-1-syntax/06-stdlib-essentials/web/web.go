@@ -17,7 +17,7 @@ func HelloHandler() http.Handler {
 			name = "gopher"
 		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		fmt.Fprintf(w, "hello, %s", name)
+		_, _ = fmt.Fprintf(w, "hello, %s", name)
 	})
 }
 
@@ -30,7 +30,9 @@ func FetchText(client *http.Client, url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
