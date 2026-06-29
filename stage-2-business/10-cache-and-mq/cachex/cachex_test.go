@@ -38,6 +38,24 @@ func TestStoreTTLAndSetNXAndCompareDelete(t *testing.T) {
 	}
 }
 
+func TestStoreExpiresWithRealTime(t *testing.T) {
+	store := NewStore(time.Now())
+	store.Set("short", "value", 10*time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
+	if _, ok := store.Get("short"); ok {
+		t.Fatal("key still exists after real time TTL elapsed")
+	}
+
+	lock := NewLockManager(store)
+	if ok := lock.Acquire("resource", "token-a", 10*time.Millisecond); !ok {
+		t.Fatal("token-a failed to acquire lock")
+	}
+	time.Sleep(20 * time.Millisecond)
+	if ok := lock.Acquire("resource", "token-b", time.Second); !ok {
+		t.Fatal("token-b failed to acquire lock after real time TTL elapsed")
+	}
+}
+
 func TestCacheAsideMissThenHit(t *testing.T) {
 	store := NewStore(time.Unix(100, 0))
 	var loads int

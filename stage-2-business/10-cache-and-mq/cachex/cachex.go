@@ -15,21 +15,31 @@ type entry struct {
 
 // Store is a Redis-like in-memory key-value store with TTL.
 type Store struct {
-	mu    sync.Mutex
-	now   time.Time
-	items map[string]entry
+	mu     sync.Mutex
+	now    time.Time
+	manual bool
+	items  map[string]entry
 }
 
 // NewStore creates a store whose clock can be advanced in tests.
 func NewStore(now time.Time) *Store {
-	return &Store{now: now, items: map[string]entry{}}
+	manual := time.Since(now) > time.Second || time.Until(now) > time.Second
+	return &Store{now: now, manual: manual, items: map[string]entry{}}
 }
 
 // Advance moves the store clock forward.
 func (s *Store) Advance(d time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.manual = true
 	s.now = s.now.Add(d)
+}
+
+func (s *Store) currentTime() time.Time {
+	if s.manual {
+		return s.now
+	}
+	return time.Now()
 }
 
 // Get returns a non-negative cached value.
@@ -54,7 +64,7 @@ func (s *Store) getLocked(key string) (entry, bool) {
 	if !ok {
 		return entry{}, false
 	}
-	if !item.expiresAt.IsZero() && !s.now.Before(item.expiresAt) {
+	if !item.expiresAt.IsZero() && !s.currentTime().Before(item.expiresAt) {
 		delete(s.items, key)
 		return entry{}, false
 	}
@@ -75,7 +85,7 @@ func (s *Store) set(key, value string, ttl time.Duration, negative bool) {
 	defer s.mu.Unlock()
 	expiresAt := time.Time{}
 	if ttl > 0 {
-		expiresAt = s.now.Add(ttl)
+		expiresAt = s.currentTime().Add(ttl)
 	}
 	s.items[key] = entry{value: value, expiresAt: expiresAt, negative: negative}
 }
@@ -96,7 +106,7 @@ func (s *Store) SetNX(key, value string, ttl time.Duration) bool {
 	}
 	expiresAt := time.Time{}
 	if ttl > 0 {
-		expiresAt = s.now.Add(ttl)
+		expiresAt = s.currentTime().Add(ttl)
 	}
 	s.items[key] = entry{value: value, expiresAt: expiresAt}
 	return true

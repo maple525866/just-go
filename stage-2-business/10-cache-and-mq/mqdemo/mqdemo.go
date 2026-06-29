@@ -31,6 +31,7 @@ type leasedMessage struct {
 type Broker struct {
 	mu                sync.Mutex
 	now               time.Time
+	manual            bool
 	visibilityTimeout time.Duration
 	nextMessageID     int
 	nextDeliveryID    int
@@ -40,14 +41,23 @@ type Broker struct {
 
 // NewBroker creates a broker with a controllable clock.
 func NewBroker(now time.Time, visibilityTimeout time.Duration) *Broker {
-	return &Broker{now: now, visibilityTimeout: visibilityTimeout, inflight: map[string]leasedMessage{}}
+	manual := time.Since(now) > time.Second || time.Until(now) > time.Second
+	return &Broker{now: now, manual: manual, visibilityTimeout: visibilityTimeout, inflight: map[string]leasedMessage{}}
 }
 
 // Advance moves the broker clock forward.
 func (b *Broker) Advance(d time.Duration) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	b.manual = true
 	b.now = b.now.Add(d)
+}
+
+func (b *Broker) currentTime() time.Time {
+	if b.manual {
+		return b.now
+	}
+	return time.Now()
 }
 
 // Publish enqueues one message.
@@ -71,7 +81,7 @@ func (b *Broker) Fetch() (Delivery, bool) {
 	b.ready = b.ready[1:]
 	b.nextDeliveryID++
 	deliveryID := fmt.Sprintf("delivery-%d", b.nextDeliveryID)
-	b.inflight[deliveryID] = leasedMessage{message: message, deliveryID: deliveryID, deadline: b.now.Add(b.visibilityTimeout)}
+	b.inflight[deliveryID] = leasedMessage{message: message, deliveryID: deliveryID, deadline: b.currentTime().Add(b.visibilityTimeout)}
 	return Delivery{ID: message.ID, DeliveryID: deliveryID, Topic: message.Topic, Body: message.Body}, true
 }
 
@@ -91,7 +101,7 @@ func (b *Broker) RequeueExpired() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	for deliveryID, leased := range b.inflight {
-		if !b.now.Before(leased.deadline) {
+		if !b.currentTime().Before(leased.deadline) {
 			delete(b.inflight, deliveryID)
 			b.ready = append(b.ready, leased.message)
 		}
