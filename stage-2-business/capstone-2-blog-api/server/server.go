@@ -135,43 +135,97 @@ func (a *API) listArticles(w http.ResponseWriter, r *http.Request) {
 func (a *API) articleSubroutes(w http.ResponseWriter, r *http.Request) {
 	rest := strings.TrimPrefix(r.URL.Path, "/api/articles/")
 	parts := strings.Split(rest, "/")
-	id, _ := strconv.ParseInt(parts[0], 10, 64)
-	if len(parts) == 1 && r.Method == http.MethodGet {
-		if art, ok := a.cache.Get(id); ok {
-			writeJSON(w, 200, art)
-			return
+	id, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusBadRequest, errors.New("invalid article id"))
+		return
+	}
+	if len(parts) == 1 {
+		switch r.Method {
+		case http.MethodGet:
+			a.getArticle(w, id)
+		case http.MethodPut:
+			a.updateArticle(w, r, id)
+		case http.MethodDelete:
+			a.deleteArticle(w, r, id)
+		default:
+			http.NotFound(w, r)
 		}
-		art, err := a.store.GetArticle(id)
-		if err != nil {
-			writeError(w, status(err), err)
-			return
-		}
-		a.cache.Set(art)
-		writeJSON(w, 200, art)
 		return
 	}
 	if len(parts) == 2 && parts[1] == "comments" && r.Method == http.MethodPost {
-		cl, ok := a.requireAuth(w, r)
-		if !ok {
-			return
-		}
-		var req struct {
-			Body     string `json:"body"`
-			ParentID int64  `json:"parent_id"`
-		}
-		if !decode(w, r, &req) {
-			return
-		}
-		c, err := a.store.AddComment(id, req.ParentID, cl.UserID, req.Body)
-		if err != nil {
-			writeError(w, status(err), err)
-			return
-		}
-		a.cache.Invalidate(id)
-		writeJSON(w, 201, c)
+		a.addComment(w, r, id)
 		return
 	}
 	http.NotFound(w, r)
+}
+
+func (a *API) getArticle(w http.ResponseWriter, id int64) {
+	if art, ok := a.cache.Get(id); ok {
+		writeJSON(w, http.StatusOK, art)
+		return
+	}
+	art, err := a.store.GetArticle(id)
+	if err != nil {
+		writeError(w, status(err), err)
+		return
+	}
+	a.cache.Set(art)
+	writeJSON(w, http.StatusOK, art)
+}
+
+func (a *API) updateArticle(w http.ResponseWriter, r *http.Request, id int64) {
+	cl, ok := a.requireAuth(w, r)
+	if !ok {
+		return
+	}
+	var req model.ArticleInput
+	if !decode(w, r, &req) {
+		return
+	}
+	req.AuthorID = cl.UserID
+	art, err := a.store.UpdateArticle(id, req)
+	if err != nil {
+		writeError(w, status(err), err)
+		return
+	}
+	a.cache.Invalidate(id)
+	a.metrics.Counter("blog_articles_updated_total", "Articles updated").Add(1)
+	writeJSON(w, http.StatusOK, art)
+}
+
+func (a *API) deleteArticle(w http.ResponseWriter, r *http.Request, id int64) {
+	if _, ok := a.requireAuth(w, r); !ok {
+		return
+	}
+	if err := a.store.DeleteArticle(id); err != nil {
+		writeError(w, status(err), err)
+		return
+	}
+	a.cache.Invalidate(id)
+	a.metrics.Counter("blog_articles_deleted_total", "Articles deleted").Add(1)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (a *API) addComment(w http.ResponseWriter, r *http.Request, id int64) {
+	cl, ok := a.requireAuth(w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		Body     string `json:"body"`
+		ParentID int64  `json:"parent_id"`
+	}
+	if !decode(w, r, &req) {
+		return
+	}
+	c, err := a.store.AddComment(id, req.ParentID, cl.UserID, req.Body)
+	if err != nil {
+		writeError(w, status(err), err)
+		return
+	}
+	a.cache.Invalidate(id)
+	writeJSON(w, http.StatusCreated, c)
 }
 func (a *API) requireAuth(w http.ResponseWriter, r *http.Request) (auth.Claims, bool) {
 	cl, err := a.tokens.Verify(auth.ParseBearer(r.Header.Get("Authorization")))

@@ -1,12 +1,13 @@
 # Capstone 2 练习
 
-## 练习 1：补齐文章更新与删除 HTTP 路由
+## 练习 1：为文章更新与删除增加所有权校验
 
-新增 `PUT /api/articles/{id}` 与 `DELETE /api/articles/{id}`。
+当前 `PUT /api/articles/{id}` 与 `DELETE /api/articles/{id}` 只要求登录；请扩展为只有作者本人可以更新或删除。
 
 验收标准：
 
-- 两个路由都需要 bearer token。
+- 作者本人更新/删除返回 200/204。
+- 其他登录用户更新/删除返回 403。
 - 更新后再次 `GET /api/articles/{id}` 返回新内容。
 - 删除后详情返回 404，列表不再出现该文章。
 - 更新和删除都必须让文章详情缓存失效。

@@ -48,9 +48,41 @@ func TestBlogAPISmokeFlow(t *testing.T) {
 	if comment.Code != http.StatusCreated {
 		t.Fatalf("comment = %d %s", comment.Code, comment.Body.String())
 	}
+
+	updated := request(t, api, http.MethodPut, "/api/articles/"+itoa(id), `{"title":"Stage 2 updated","body":"capstone updated","tags":["go","updated"]}`, token)
+	if updated.Code != http.StatusOK || !strings.Contains(updated.Body.String(), "Stage 2 updated") {
+		t.Fatalf("update = %d %s", updated.Code, updated.Body.String())
+	}
+	detail := request(t, api, http.MethodGet, "/api/articles/"+itoa(id), "", "")
+	if detail.Code != http.StatusOK || !strings.Contains(detail.Body.String(), "Stage 2 updated") {
+		t.Fatalf("detail after update = %d %s", detail.Code, detail.Body.String())
+	}
+
+	deleted := request(t, api, http.MethodDelete, "/api/articles/"+itoa(id), "", token)
+	if deleted.Code != http.StatusNoContent {
+		t.Fatalf("delete = %d %s", deleted.Code, deleted.Body.String())
+	}
+	missing := request(t, api, http.MethodGet, "/api/articles/"+itoa(id), "", "")
+	if missing.Code != http.StatusNotFound {
+		t.Fatalf("detail after delete = %d %s", missing.Code, missing.Body.String())
+	}
+
 	metrics := request(t, api, http.MethodGet, "/metrics", "", "")
 	if metrics.Code != http.StatusOK || !strings.Contains(metrics.Body.String(), "blog_http_requests_total") {
 		t.Fatalf("metrics = %d %s", metrics.Code, metrics.Body.String())
+	}
+}
+
+func TestArticleIDValidationAndAuth(t *testing.T) {
+	api := NewAPI(store.NewMemoryStore(), cache.NewArticleCache(time.Minute), auth.NewTokenManager([]byte("secret")))
+
+	badID := request(t, api, http.MethodGet, "/api/articles/not-a-number", "", "")
+	if badID.Code != http.StatusBadRequest {
+		t.Fatalf("bad id = %d %s", badID.Code, badID.Body.String())
+	}
+	unauthorized := request(t, api, http.MethodPost, "/api/articles", `{"title":"x","body":"y"}`, "")
+	if unauthorized.Code != http.StatusUnauthorized {
+		t.Fatalf("unauthorized create = %d %s", unauthorized.Code, unauthorized.Body.String())
 	}
 }
 

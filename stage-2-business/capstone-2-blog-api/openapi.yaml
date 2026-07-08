@@ -83,6 +83,44 @@ paths:
       responses:
         '200':
           description: Article detail
+        '400':
+          description: Invalid article id
+        '404':
+          description: Not found
+    put:
+      summary: Update an article
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ArticleID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleInput'
+      responses:
+        '200':
+          description: Updated article
+        '400':
+          description: Invalid article id
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: Not found
+    delete:
+      summary: Delete an article
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ArticleID'
+      responses:
+        '204':
+          description: Deleted
+        '400':
+          description: Invalid article id
+        '401':
+          description: Missing or invalid token
         '404':
           description: Not found
   /api/articles/{id}/comments:

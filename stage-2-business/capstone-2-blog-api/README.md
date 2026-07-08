@@ -50,7 +50,7 @@ go run ./stage-2-business/capstone-2-blog-api
 docker compose -f stage-2-business/capstone-2-blog-api/docker-compose.yml up --build
 ```
 
-> 当前 `main.go` 输出服务报告；如要真正监听 HTTP，可在 `main.go` 中把 `server.NewAPI(...)` 传给 `http.ListenAndServe`。
+服务默认监听 `:8080`，可通过 `ADDR=:8081` 覆盖。
 
 ## 🌐 API 速览
 
@@ -61,6 +61,8 @@ docker compose -f stage-2-business/capstone-2-blog-api/docker-compose.yml up --b
 | GET | `/api/articles?tag=go&page=1&page_size=10` | 否 | 文章列表、标签过滤、分页 |
 | POST | `/api/articles` | 是 | 创建文章 |
 | GET | `/api/articles/{id}` | 否 | 文章详情，命中 TTL cache |
+| PUT | `/api/articles/{id}` | 是 | 更新文章并失效缓存 |
+| DELETE | `/api/articles/{id}` | 是 | 删除文章并失效缓存 |
 | POST | `/api/articles/{id}/comments` | 是 | 新增根评论或带 `parent_id` 的回复 |
 | GET | `/livez` | 否 | liveness 健康检查 |
 | GET | `/readyz` | 否 | readiness 健康检查 |
@@ -78,6 +80,10 @@ curl -X POST http://localhost:8080/api/articles \
   -H 'Content-Type: application/json' \
   -d '{"title":"Stage 2","body":"capstone","tags":["go","api"]}'
 ```
+
+## 🔐 安全说明
+
+本项目的密码哈希和 HMAC bearer token 是为了教学可读性而实现的最小版本：生产环境应使用 bcrypt/argon2id 存储密码，并使用包含过期时间、签发者、受众等声明的 JWT 或会话方案。
 
 ## 🏗️ 分层说明
 
