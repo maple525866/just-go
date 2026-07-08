@@ -4,22 +4,47 @@
 
 ## 🎯 学习目标
 
-Redis 缓存的常见模式 + NATS / Kafka 消息系统的入门用法。
+掌握 Redis 缓存的常见模式、缓存风险治理、分布式锁思想，以及轻量消息队列的生产 / 消费 / ack 语义。
 
 ## 🧩 关键知识点
 
-- Redis 客户端（`go-redis`）基础与连接池
+- Redis 风格 key-value、TTL、`SET NX`、Compare-And-Delete
 - 缓存模式：Cache-Aside、Read-Through、Write-Through
 - 缓存三大问题：穿透 / 雪崩 / 击穿 的工程对策
-- 分布式锁（Redis 实现）
-- 消息队列：NATS（轻量）或 Kafka（重量）的 Go 客户端
-- 消息的至少一次 / 最多一次 / 精确一次语义
+- 分布式锁：token、TTL、持有者释放
+- 消息队列：发布、消费、ack、未 ack 重投
+- 至少一次 / 最多一次 / 精确一次语义的差异
 
-## 📦 本章产出（待 OpenSpec change 填充）
+## 📦 本章产出
 
-> ⚠️ 当前本章内容尚未实现。
->
-> 请通过 `/opsx-propose chapter-10-cache-and-mq` 来落地本章内容。
+本章使用内存组件模拟 Redis 与轻量消息 broker 的核心语义，保证无需启动外部 Redis / NATS / Kafka 即可运行测试。生产项目中可将这些接口替换为 go-redis、NATS 或 Kafka 客户端。
+
+```text
+stage-2-business/10-cache-and-mq/
+├── main.go          # 输出缓存与消息学习报告
+├── cachex/          # TTL store、缓存模式、负缓存、TTL jitter、singleflight、锁
+└── mqdemo/          # 内存 broker、Publish / Fetch / Ack / RequeueExpired
+```
+
+运行测试：
+
+```bash
+go test ./stage-2-business/10-cache-and-mq/...
+```
+
+运行示例：
+
+```bash
+go run ./stage-2-business/10-cache-and-mq
+```
+
+真实组件替换方向：
+
+| 本章教学组件 | 生产替换 | 关注点 |
+|---|---|---|
+| `cachex.Store` | `github.com/redis/go-redis/v9` | TTL、连接池、序列化、错误处理 |
+| `cachex.LockManager` | Redis `SET key token NX PX` + Lua 删除 | token 校验、续约、时钟与网络抖动 |
+| `mqdemo.Broker` | NATS / Kafka | ack、重试、offset、consumer group |
 
 ## 🔗 前置依赖
 
@@ -31,10 +56,11 @@ Redis 缓存的常见模式 + NATS / Kafka 消息系统的入门用法。
 - [NATS Go Client](https://github.com/nats-io/nats.go)
 - [Apache Kafka Go Client (segmentio/kafka-go)](https://github.com/segmentio/kafka-go)
 
-## ✅ 自测清单（落地后填充）
+## ✅ 自测清单
 
-- [ ] 能用 Cache-Aside 模式封装一层数据缓存
-- [ ] 能讲清并演示缓存穿透 / 雪崩 / 击穿三种问题及其对策
-- [ ] 能用 Redis 实现一把安全的分布式锁（含续约）
-- [ ] 能用 NATS 或 Kafka 写一组生产 / 消费示例
-- [ ] 能解释三种消息语义在实现上的差异
+- [ ] 能用 Cache-Aside 模式封装一层数据缓存。
+- [ ] 能区分 Read-Through 与 Write-Through 的职责边界。
+- [ ] 能讲清缓存穿透 / 雪崩 / 击穿三种问题及其对策。
+- [ ] 能用 token + TTL 解释 Redis 分布式锁的安全释放条件。
+- [ ] 能写一组消息生产 / 消费 / ack / 重投示例。
+- [ ] 能解释至少一次、最多一次、精确一次语义在实现上的差异。
