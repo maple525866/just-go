@@ -1,0 +1,202 @@
+openapi: 3.0.3
+info:
+  title: Capstone 2 Blog API
+  version: 0.1.0
+  description: Teaching monolith for Stage 2 Go business engineering.
+paths:
+  /api/register:
+    post:
+      summary: Register a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        '201':
+          description: Created user
+        '409':
+          description: Duplicate username
+  /api/login:
+    post:
+      summary: Login and return bearer token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        '200':
+          description: Token response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Invalid credentials
+  /api/articles:
+    get:
+      summary: List articles
+      parameters:
+        - in: query
+          name: tag
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Paged articles
+    post:
+      summary: Create an article
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleInput'
+      responses:
+        '201':
+          description: Created article
+        '401':
+          description: Missing or invalid token
+  /api/articles/{id}:
+    get:
+      summary: Get article detail
+      parameters:
+        - $ref: '#/components/parameters/ArticleID'
+      responses:
+        '200':
+          description: Article detail
+        '400':
+          description: Invalid article id
+        '404':
+          description: Not found
+    put:
+      summary: Update an article
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ArticleID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleInput'
+      responses:
+        '200':
+          description: Updated article
+        '400':
+          description: Invalid article id
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: Not found
+    delete:
+      summary: Delete an article
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ArticleID'
+      responses:
+        '204':
+          description: Deleted
+        '400':
+          description: Invalid article id
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: Not found
+  /api/articles/{id}/comments:
+    post:
+      summary: Add a root comment or reply
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ArticleID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentInput'
+      responses:
+        '201':
+          description: Created comment
+  /livez:
+    get:
+      summary: Liveness probe
+      responses:
+        '200':
+          description: Process is alive
+  /readyz:
+    get:
+      summary: Readiness probe
+      responses:
+        '200':
+          description: Ready for traffic
+        '503':
+          description: Not ready
+  /metrics:
+    get:
+      summary: Prometheus text metrics
+      responses:
+        '200':
+          description: Metrics exposition
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    ArticleID:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+  schemas:
+    AuthRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    ArticleInput:
+      type: object
+      required: [title, body]
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+    CommentInput:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+        parent_id:
+          type: integer
