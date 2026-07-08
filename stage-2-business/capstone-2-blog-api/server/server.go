@@ -236,7 +236,9 @@ func (a *API) requireAuth(w http.ResponseWriter, r *http.Request) (auth.Claims, 
 	return cl, true
 }
 func decode(w http.ResponseWriter, r *http.Request, v any) bool {
-	defer r.Body.Close()
+	defer func() {
+		_ = r.Body.Close()
+	}()
 	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
 		writeError(w, 400, err)
 		return false
