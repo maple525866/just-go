@@ -16,7 +16,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	pool := dbx.PoolConfig{MaxOpenConns: 4, MaxIdleConns: 2, ConnMaxLifetime: 30 * time.Minute}
 	dbx.ConfigurePool(db, pool)

@@ -80,7 +80,7 @@ func (r *Repository) List() ([]Article, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var articles []Article
 	for rows.Next() {
@@ -99,7 +99,7 @@ func (r *Repository) FindByTitle(title string) ([]Article, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var articles []Article
 	for rows.Next() {
