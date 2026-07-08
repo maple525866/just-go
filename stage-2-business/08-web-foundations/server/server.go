@@ -57,7 +57,7 @@ func listArticles(articles *store.MemoryStore) http.HandlerFunc {
 
 func createArticle(articles *store.MemoryStore, validator *validation.Validator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
+		defer func() { _ = r.Body.Close() }()
 
 		var request model.CreateArticleRequest
 		decoder := json.NewDecoder(r.Body)
