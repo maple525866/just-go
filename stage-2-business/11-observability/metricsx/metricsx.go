@@ -102,27 +102,20 @@ func (h *Histogram) Observe(v float64) {
 }
 
 func (r *Registry) Exposition() string {
-	r.mu.Lock()
-	counterNames := keys(r.counters)
-	gaugeNames := keys(r.gauges)
-	histogramNames := keys(r.histograms)
-	r.mu.Unlock()
+	counters, gauges, histograms := r.snapshot()
 
 	var b strings.Builder
-	for _, name := range counterNames {
-		c := r.counters[name]
+	for _, c := range counters {
 		c.mu.Lock()
 		fmt.Fprintf(&b, "# HELP %s %s\n# TYPE %s counter\n%s %g\n", c.name, c.help, c.name, c.name, c.v)
 		c.mu.Unlock()
 	}
-	for _, name := range gaugeNames {
-		g := r.gauges[name]
+	for _, g := range gauges {
 		g.mu.Lock()
 		fmt.Fprintf(&b, "# HELP %s %s\n# TYPE %s gauge\n%s %g\n", g.name, g.help, g.name, g.name, g.v)
 		g.mu.Unlock()
 	}
-	for _, name := range histogramNames {
-		h := r.histograms[name]
+	for _, h := range histograms {
 		h.mu.Lock()
 		fmt.Fprintf(&b, "# HELP %s %s\n# TYPE %s histogram\n", h.name, h.help, h.name)
 		for i, upper := range h.buckets {
@@ -132,6 +125,29 @@ func (r *Registry) Exposition() string {
 		h.mu.Unlock()
 	}
 	return b.String()
+}
+
+func (r *Registry) snapshot() ([]*Counter, []*Gauge, []*Histogram) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	counterNames := keys(r.counters)
+	gaugeNames := keys(r.gauges)
+	histogramNames := keys(r.histograms)
+
+	counters := make([]*Counter, 0, len(counterNames))
+	for _, name := range counterNames {
+		counters = append(counters, r.counters[name])
+	}
+	gauges := make([]*Gauge, 0, len(gaugeNames))
+	for _, name := range gaugeNames {
+		gauges = append(gauges, r.gauges[name])
+	}
+	histograms := make([]*Histogram, 0, len(histogramNames))
+	for _, name := range histogramNames {
+		histograms = append(histograms, r.histograms[name])
+	}
+	return counters, gauges, histograms
 }
 
 func keys[T any](m map[string]T) []string {

@@ -23,6 +23,6 @@
 
 ## 5. Learning Materials and Verification
 
-- [x] 5.1 Update README with package list, run commands, sample endpoints, and a filled checklist.
+- [x] 5.1 Update README with package list, run commands, sample endpoints, and a self-check checklist.
 - [x] 5.2 Add EXERCISES with 3 to 5 exercises and explicit acceptance criteria.
 - [x] 5.3 Run chapter tests, chapter demo, full tests, vet, and build; fix failures.

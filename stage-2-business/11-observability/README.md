@@ -12,7 +12,7 @@
 - Prometheus metrics：Counter / Gauge / Histogram 与文本暴露格式
 - Trace：trace ID / span ID、父子 span、`context.Context` 传播
 - 健康检查：liveness / readiness 的职责差异
-- 日志规范：traceID、level、业务字段与请求字段约定
+- 日志规范：trace_id、level、业务字段与请求字段约定
 
 ## 📦 本章产出
 
@@ -40,7 +40,7 @@ go test ./stage-2-business/11-observability/...
 go run ./stage-2-business/11-observability
 ```
 
-在 HTTP 侧使用：
+在 HTTP 侧使用（核心片段，省略 import 与错误处理）：
 
 ```go
 checker := healthx.NewChecker()
