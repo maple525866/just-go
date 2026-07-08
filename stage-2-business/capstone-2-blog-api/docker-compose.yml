@@ -1,0 +1,7 @@
+services:
+  blog-api:
+    build:
+      context: ../..
+      dockerfile: stage-2-business/capstone-2-blog-api/Dockerfile
+    ports:
+      - "8080:8080"
