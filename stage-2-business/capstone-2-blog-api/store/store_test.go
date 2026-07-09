@@ -48,3 +48,60 @@ func TestStoreArticlePaginationTagsAndComments(t *testing.T) {
 		t.Fatalf("nested soft-deleted comment missing: %+v", article.Comments)
 	}
 }
+
+func TestStoreRejectsForbiddenAndInvalidUpdates(t *testing.T) {
+	s := NewMemoryStore()
+	alice, _ := s.CreateUser("alice", "hash")
+	bob, _ := s.CreateUser("bob", "hash")
+	article, err := s.CreateArticle(model.ArticleInput{AuthorID: alice.ID, Title: "Original", Body: "body", Tags: []string{"go"}})
+	if err != nil {
+		t.Fatalf("CreateArticle: %v", err)
+	}
+
+	if _, err := s.UpdateArticle(article.ID, model.ArticleInput{AuthorID: bob.ID, Title: "Stolen"}); err != ErrForbidden {
+		t.Fatalf("bob update err = %v, want ErrForbidden", err)
+	}
+	if err := s.DeleteArticle(article.ID, bob.ID); err != ErrForbidden {
+		t.Fatalf("bob delete err = %v, want ErrForbidden", err)
+	}
+
+	invalid := []model.ArticleInput{
+		{AuthorID: alice.ID},
+		{AuthorID: alice.ID, Title: "   "},
+		{AuthorID: alice.ID, Body: "   "},
+	}
+	for _, input := range invalid {
+		if _, err := s.UpdateArticle(article.ID, input); err != ErrInvalid {
+			t.Fatalf("UpdateArticle(%+v) err = %v, want ErrInvalid", input, err)
+		}
+	}
+
+	updated, err := s.UpdateArticle(article.ID, model.ArticleInput{AuthorID: alice.ID, Tags: []string{"updated"}})
+	if err != nil {
+		t.Fatalf("valid update: %v", err)
+	}
+	if len(updated.Tags) != 1 || updated.Tags[0] != "updated" {
+		t.Fatalf("updated tags = %+v", updated.Tags)
+	}
+	if err := s.DeleteArticle(article.ID, alice.ID); err != nil {
+		t.Fatalf("alice delete: %v", err)
+	}
+}
+
+func TestListArticlesHandlesHugePageWithoutPanic(t *testing.T) {
+	s := NewMemoryStore()
+	user, _ := s.CreateUser("alice", "hash")
+	for _, title := range []string{"one", "two"} {
+		if _, err := s.CreateArticle(model.ArticleInput{AuthorID: user.ID, Title: title, Body: "body"}); err != nil {
+			t.Fatalf("CreateArticle: %v", err)
+		}
+	}
+
+	page, err := s.ListArticles(model.ArticleFilter{Page: int(^uint(0) >> 1), PageSize: 100})
+	if err != nil {
+		t.Fatalf("ListArticles: %v", err)
+	}
+	if page.Total != 2 || len(page.Items) != 0 {
+		t.Fatalf("page = %+v, want total 2 and no items", page)
+	}
+}

@@ -27,6 +27,21 @@ func TestValidateCreateArticleRequest(t *testing.T) {
 			request:    model.CreateArticleRequest{Title: "Routing", Body: "Long enough body", Tags: []string{""}},
 			wantFields: []string{"tags[0]"},
 		},
+		{
+			name:       "blank title",
+			request:    model.CreateArticleRequest{Title: "   ", Body: "Long enough body", Tags: []string{"go"}},
+			wantFields: []string{"title"},
+		},
+		{
+			name:       "blank body",
+			request:    model.CreateArticleRequest{Title: "Routing", Body: "          ", Tags: []string{"go"}},
+			wantFields: []string{"body"},
+		},
+		{
+			name:       "blank tag element",
+			request:    model.CreateArticleRequest{Title: "Routing", Body: "Long enough body", Tags: []string{"   "}},
+			wantFields: []string{"tags[0]"},
+		},
 	}
 
 	validator := New()

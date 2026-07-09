@@ -28,11 +28,25 @@ func (c *ArticleCache) Get(id int64) (model.Article, bool) {
 		delete(c.items, id)
 		return model.Article{}, false
 	}
-	return e.article, true
+	return cloneArticle(e.article), true
 }
 func (c *ArticleCache) Set(a model.Article) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.items[a.ID] = entry{article: a, expiresAt: time.Now().Add(c.ttl)}
+	c.items[a.ID] = entry{article: cloneArticle(a), expiresAt: time.Now().Add(c.ttl)}
 }
 func (c *ArticleCache) Invalidate(id int64) { c.mu.Lock(); defer c.mu.Unlock(); delete(c.items, id) }
+
+func cloneArticle(a model.Article) model.Article {
+	a.Tags = append([]string(nil), a.Tags...)
+	a.Comments = cloneComments(a.Comments)
+	return a
+}
+
+func cloneComments(in []model.Comment) []model.Comment {
+	out := append([]model.Comment(nil), in...)
+	for i := range out {
+		out[i].Replies = cloneComments(out[i].Replies)
+	}
+	return out
+}

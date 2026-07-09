@@ -89,7 +89,13 @@ func (b *Broker) Fetch() (Delivery, bool) {
 func (b *Broker) Ack(deliveryID string) bool {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if _, ok := b.inflight[deliveryID]; !ok {
+	leased, ok := b.inflight[deliveryID]
+	if !ok {
+		return false
+	}
+	if !b.currentTime().Before(leased.deadline) {
+		delete(b.inflight, deliveryID)
+		b.ready = append(b.ready, leased.message)
 		return false
 	}
 	delete(b.inflight, deliveryID)

@@ -18,7 +18,11 @@ type Validator struct {
 
 // New builds the chapter validator.
 func New() *Validator {
-	return &Validator{validate: validator.New(validator.WithRequiredStructEnabled())}
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	_ = validate.RegisterValidation("notblank", func(level validator.FieldLevel) bool {
+		return strings.TrimSpace(level.Field().String()) != ""
+	})
+	return &Validator{validate: validate}
 }
 
 // ValidateCreateArticle returns client-readable field errors.

@@ -34,6 +34,27 @@ func TestAckRemovesMessage(t *testing.T) {
 	}
 }
 
+func TestExpiredDeliveryCannotBeAckedAndIsRedelivered(t *testing.T) {
+	broker := NewBroker(time.Unix(100, 0), time.Second)
+	broker.Publish("article.created", "article-1")
+	first, ok := broker.Fetch()
+	if !ok {
+		t.Fatal("Fetch returned no message")
+	}
+
+	broker.Advance(2 * time.Second)
+	if ok := broker.Ack(first.DeliveryID); ok {
+		t.Fatal("Ack succeeded for expired delivery")
+	}
+	second, ok := broker.Fetch()
+	if !ok {
+		t.Fatal("Fetch after expired Ack returned no message")
+	}
+	if second.ID != first.ID || second.DeliveryID == first.DeliveryID {
+		t.Fatalf("redelivery = %+v, first = %+v", second, first)
+	}
+}
+
 func TestUnackedMessageIsRedeliveredAfterRealTimeVisibilityTimeout(t *testing.T) {
 	broker := NewBroker(time.Now(), 10*time.Millisecond)
 	broker.Publish("article.created", "article-1")

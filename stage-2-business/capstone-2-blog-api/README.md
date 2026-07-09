@@ -71,6 +71,10 @@ docker compose -f stage-2-business/capstone-2-blog-api/docker-compose.yml up --b
 示例请求：
 
 ```bash
+curl -X POST http://localhost:8080/api/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"alice","password":"secret"}'
+
 TOKEN=$(curl -s -X POST http://localhost:8080/api/login \
   -H 'Content-Type: application/json' \
   -d '{"username":"alice","password":"secret"}' | jq -r .token)

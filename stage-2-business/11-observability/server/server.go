@@ -45,7 +45,8 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	case "/readyz":
 		report := r.checker.Readiness(ctx)
 		if !report.OK {
-			w.WriteHeader(http.StatusServiceUnavailable)
+			writeJSONStatus(w, http.StatusServiceUnavailable, report)
+			return
 		}
 		writeJSON(w, report)
 	case "/metrics":
@@ -64,6 +65,11 @@ func writeReport(w http.ResponseWriter, report healthx.Report) {
 }
 
 func writeJSON(w http.ResponseWriter, v any) {
+	writeJSONStatus(w, http.StatusOK, v)
+}
+
+func writeJSONStatus(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
 }

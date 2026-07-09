@@ -12,6 +12,7 @@ import (
 
 var ErrNotFound = errors.New("not found")
 var ErrDuplicate = errors.New("duplicate")
+var ErrForbidden = errors.New("forbidden")
 var ErrInvalid = errors.New("invalid input")
 
 type MemoryStore struct {
@@ -85,10 +86,22 @@ func (s *MemoryStore) UpdateArticle(id int64, in model.ArticleInput) (model.Arti
 	if !ok {
 		return model.Article{}, ErrNotFound
 	}
+	if a.AuthorID != in.AuthorID {
+		return model.Article{}, ErrForbidden
+	}
+	if in.Title == "" && in.Body == "" && in.Tags == nil {
+		return model.Article{}, ErrInvalid
+	}
 	if in.Title != "" {
+		if strings.TrimSpace(in.Title) == "" {
+			return model.Article{}, ErrInvalid
+		}
 		a.Title = in.Title
 	}
 	if in.Body != "" {
+		if strings.TrimSpace(in.Body) == "" {
+			return model.Article{}, ErrInvalid
+		}
 		a.Body = in.Body
 	}
 	if in.Tags != nil {
@@ -99,11 +112,15 @@ func (s *MemoryStore) UpdateArticle(id int64, in model.ArticleInput) (model.Arti
 	return cloneArticle(a), nil
 }
 
-func (s *MemoryStore) DeleteArticle(id int64) error {
+func (s *MemoryStore) DeleteArticle(id, authorID int64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, ok := s.articles[id]; !ok {
+	article, ok := s.articles[id]
+	if !ok {
 		return ErrNotFound
+	}
+	if article.AuthorID != authorID {
+		return ErrForbidden
 	}
 	delete(s.articles, id)
 	return nil
@@ -126,9 +143,13 @@ func (s *MemoryStore) ListArticles(f model.ArticleFilter) (model.Page[model.Arti
 	}
 	sort.Slice(items, func(i, j int) bool { return items[i].ID > items[j].ID })
 	total := len(items)
-	start := (f.Page - 1) * f.PageSize
-	if start > total {
-		start = total
+	start := 0
+	if f.Page > 1 {
+		if f.Page-1 > total/f.PageSize {
+			start = total
+		} else {
+			start = (f.Page - 1) * f.PageSize
+		}
 	}
 	end := start + f.PageSize
 	if end > total {
