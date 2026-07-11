@@ -6,7 +6,7 @@
 
 **Architecture:** Product and inventory services communicate over real gRPC transports using committed generated contracts. Narrow discovery and configuration interfaces have deterministic in-memory adapters; a standard-library HTTP Gateway applies edge policy, resolves gRPC endpoints, and aggregates both services under one deadline.
 
-**Tech Stack:** Go 1.24, grpc-go v1.80.0, protobuf-go v1.36.11, protoc-gen-go-grpc v1.5.1, Buf CLI v1.65.0, net/http, Go standard testing, bufconn.
+**Tech Stack:** Go 1.24, grpc-go v1.75.1, protobuf-go v1.36.11, protoc-gen-go-grpc v1.5.1, Buf CLI v1.65.0, net/http, Go standard testing, bufconn.
 
 ## Global Constraints
 
@@ -65,7 +65,7 @@
 
 **Interfaces:**
 - Produces: productv1.ProductService with GetProduct(context.Context, *GetProductRequest) and inventoryv1.InventoryService with GetStock, WatchStock, and SyncStock generated interfaces.
-- Produces: GetProductRequest{Sku}, ProductResponse{Sku, Name, PriceCents}, GetStockRequest{Sku}, WatchStockRequest{Sku}, SyncStockRequest{Sku, Delta}, and StockResponse{Sku, Quantity, Version}.
+- Produces: GetProductRequest{Sku}, GetProductResponse{Sku, Name, PriceCents}, GetStockRequest{Sku}, GetStockResponse{Sku, Quantity, Version}, WatchStockRequest{Sku}, WatchStockResponse{Sku, Quantity, Version}, SyncStockRequest{Sku, Delta}, and SyncStockResponse{Sku, Quantity, Version}.
 
 - [ ] **Step 1: Write the failing contract reflection test**
 
@@ -122,7 +122,7 @@ Create buf.yaml:
 ~~~yaml
 version: v2
 modules:
-  - path: .
+  - path: api
 ~~~
 
 Create buf.gen.yaml:
@@ -131,10 +131,10 @@ Create buf.gen.yaml:
 version: v2
 plugins:
   - local: ["go", "run", "google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11"]
-    out: .
+    out: api
     opt: paths=source_relative
   - local: ["go", "run", "google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1"]
-    out: .
+    out: api
     opt: paths=source_relative
 ~~~
 
@@ -148,14 +148,14 @@ package product.v1;
 option go_package = "just-go/stage-3-architecture/14-microservices/api/product/v1;productv1";
 
 service ProductService {
-  rpc GetProduct(GetProductRequest) returns (ProductResponse);
+  rpc GetProduct(GetProductRequest) returns (GetProductResponse);
 }
 
 message GetProductRequest {
   string sku = 1;
 }
 
-message ProductResponse {
+message GetProductResponse {
   string sku = 1;
   string name = 2;
   int64 price_cents = 3;
@@ -172,9 +172,9 @@ package inventory.v1;
 option go_package = "just-go/stage-3-architecture/14-microservices/api/inventory/v1;inventoryv1";
 
 service InventoryService {
-  rpc GetStock(GetStockRequest) returns (StockResponse);
-  rpc WatchStock(WatchStockRequest) returns (stream StockResponse);
-  rpc SyncStock(stream SyncStockRequest) returns (stream StockResponse);
+  rpc GetStock(GetStockRequest) returns (GetStockResponse);
+  rpc WatchStock(WatchStockRequest) returns (stream WatchStockResponse);
+  rpc SyncStock(stream SyncStockRequest) returns (stream SyncStockResponse);
 }
 
 message GetStockRequest {
@@ -190,7 +190,19 @@ message SyncStockRequest {
   int64 delta = 2;
 }
 
-message StockResponse {
+message GetStockResponse {
+  string sku = 1;
+  int64 quantity = 2;
+  uint64 version = 3;
+}
+
+message WatchStockResponse {
+  string sku = 1;
+  int64 quantity = 2;
+  uint64 version = 3;
+}
+
+message SyncStockResponse {
   string sku = 1;
   int64 quantity = 2;
   uint64 version = 3;
@@ -205,11 +217,11 @@ Run:
 Push-Location stage-3-architecture/14-microservices
 go run github.com/bufbuild/buf/cmd/buf@v1.65.0 generate
 Pop-Location
-go get google.golang.org/grpc@v1.80.0 google.golang.org/protobuf@v1.36.11
+go get google.golang.org/grpc@v1.75.1 google.golang.org/protobuf@v1.36.11
 go mod tidy
 ~~~
 
-Expected: four generated .pb.go files exist; go.mod remains go 1.24 and contains grpc v1.80.0 plus protobuf v1.36.11.
+Expected: four generated .pb.go files exist; go.mod remains go 1.24 and contains grpc v1.75.1 plus protobuf v1.36.11.
 
 - [ ] **Step 5: Run the contract test and protocol lint**
 
@@ -387,7 +399,7 @@ func NewService(catalog *Catalog) *Service {
     return &Service{catalog: catalog}
 }
 
-func (s *Service) GetProduct(ctx context.Context, req *productv1.GetProductRequest) (*productv1.ProductResponse, error)
+func (s *Service) GetProduct(ctx context.Context, req *productv1.GetProductRequest) (*productv1.GetProductResponse, error)
 ~~~
 
 Inventory uses the parallel signatures:
@@ -399,7 +411,7 @@ type Service struct {
 }
 
 func NewService(store *Store) *Service
-func (s *Service) GetStock(context.Context, *inventoryv1.GetStockRequest) (*inventoryv1.StockResponse, error)
+func (s *Service) GetStock(context.Context, *inventoryv1.GetStockRequest) (*inventoryv1.GetStockResponse, error)
 ~~~
 
 - [ ] **Step 8: Run focused and race tests**

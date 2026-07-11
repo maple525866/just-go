@@ -1,8 +1,8 @@
 ## 1. Protocol Contracts and Dependencies
 
-- [ ] 1.1 Define product and inventory protobuf contracts with unary, server-streaming, and bidirectional-streaming RPCs.
-- [ ] 1.2 Add pinned protobuf generation configuration or commands and generate the Go/gRPC sources from the protocol files.
-- [ ] 1.3 Add the minimal gRPC and protobuf runtime dependencies, run `go mod tidy`, and verify generated packages build without local generator tools.
+- [x] 1.1 Define product and inventory protobuf contracts with unary, server-streaming, and bidirectional-streaming RPCs.
+- [x] 1.2 Add pinned protobuf generation configuration or commands and generate the Go/gRPC sources from the protocol files.
+- [x] 1.3 Add the minimal gRPC and protobuf runtime dependencies, run `go mod tidy`, and verify generated packages build without local generator tools.
 
 ## 2. Product and Inventory gRPC Services
 
