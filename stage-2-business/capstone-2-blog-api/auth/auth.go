@@ -75,6 +75,12 @@ func (m *TokenManager) sign(body string) string {
 	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
 }
 
-func ParseBearer(header string) string { return strings.TrimPrefix(header, "Bearer ") }
+func ParseBearer(header string) string {
+	fields := strings.Fields(header)
+	if len(fields) != 2 || !strings.EqualFold(fields[0], "Bearer") {
+		return ""
+	}
+	return fields[1]
+}
 
 func UserIDString(id int64) string { return strconv.FormatInt(id, 10) }

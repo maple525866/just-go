@@ -52,8 +52,12 @@ func TestRouterReadinessFailure(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/readyz", nil))
-	data, _ := io.ReadAll(rec.Result().Body)
+	result := rec.Result()
+	data, _ := io.ReadAll(result.Body)
 	if rec.Code != http.StatusServiceUnavailable || !strings.Contains(string(data), "db down") {
 		t.Fatalf("readyz response = %d %s", rec.Code, string(data))
+	}
+	if got := result.Header.Get("Content-Type"); got != "application/json" {
+		t.Fatalf("content type = %q, want application/json", got)
 	}
 }

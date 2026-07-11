@@ -3,6 +3,7 @@ package cachex
 import (
 	"context"
 	"hash/fnv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -200,6 +201,9 @@ func (c *WriteThrough) Store() *Store { return c.store }
 
 // JitterTTL returns a deterministic TTL spread by percent for a key.
 func JitterTTL(base time.Duration, percent int, key string) time.Duration {
+	if base <= 0 {
+		return 0
+	}
 	if percent <= 0 {
 		return base
 	}
@@ -210,7 +214,11 @@ func JitterTTL(base time.Duration, percent int, key string) time.Duration {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(key))
 	offset := int64(h.Sum32())%(2*rangeNanos+1) - rangeNanos
-	return base + time.Duration(offset)
+	jittered := base + time.Duration(offset)
+	if jittered <= 0 {
+		return base
+	}
+	return jittered
 }
 
 // SingleFlightCache coalesces concurrent cache misses for the same key.
@@ -223,7 +231,7 @@ type SingleFlightCache struct {
 }
 
 type call struct {
-	wg    sync.WaitGroup
+	done  chan struct{}
 	value string
 	ok    bool
 	err   error
@@ -241,20 +249,25 @@ func (c *SingleFlightCache) Get(ctx context.Context, key string) (string, bool, 
 	c.mu.Lock()
 	if existing, ok := c.calls[key]; ok {
 		c.mu.Unlock()
-		existing.wg.Wait()
-		return existing.value, existing.ok, existing.err
+		select {
+		case <-existing.done:
+			return existing.value, existing.ok, existing.err
+		case <-ctx.Done():
+			return "", false, ctx.Err()
+		}
 	}
-	current := &call{}
-	current.wg.Add(1)
+	current := &call{done: make(chan struct{})}
 	c.calls[key] = current
 	c.mu.Unlock()
 
-	current.value, current.ok, current.err = CacheAside(ctx, c.store, key, c.ttl, c.loader)
-	current.wg.Done()
+	defer func() {
+		c.mu.Lock()
+		delete(c.calls, key)
+		c.mu.Unlock()
+		close(current.done)
+	}()
 
-	c.mu.Lock()
-	delete(c.calls, key)
-	c.mu.Unlock()
+	current.value, current.ok, current.err = CacheAside(ctx, c.store, key, c.ttl, c.loader)
 	return current.value, current.ok, current.err
 }
 
@@ -268,9 +281,15 @@ func NewLockManager(store *Store) *LockManager {
 }
 
 func (l *LockManager) Acquire(resource, token string, ttl time.Duration) bool {
+	if strings.TrimSpace(resource) == "" || strings.TrimSpace(token) == "" || ttl <= 0 {
+		return false
+	}
 	return l.store.SetNX("lock:"+resource, token, ttl)
 }
 
 func (l *LockManager) Release(resource, token string) bool {
+	if strings.TrimSpace(resource) == "" || strings.TrimSpace(token) == "" {
+		return false
+	}
 	return l.store.CompareAndDelete("lock:"+resource, token)
 }

@@ -11,9 +11,9 @@ func TestCreateArticleRequestValidationTags(t *testing.T) {
 		got  string
 		want string
 	}{
-		{name: "title", got: createArticleRequestValidationTag("Title"), want: "required,max=80"},
-		{name: "body", got: createArticleRequestValidationTag("Body"), want: "required,min=10"},
-		{name: "tags", got: createArticleRequestValidationTag("Tags"), want: "required,dive,required,max=20"},
+		{name: "title", got: createArticleRequestValidationTag("Title"), want: "required,notblank,max=80"},
+		{name: "body", got: createArticleRequestValidationTag("Body"), want: "required,notblank,min=10"},
+		{name: "tags", got: createArticleRequestValidationTag("Tags"), want: "required,dive,required,notblank,max=20"},
 	}
 
 	for _, tt := range tests {

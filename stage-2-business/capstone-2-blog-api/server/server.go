@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -72,6 +73,10 @@ func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (a *API) register(w http.ResponseWriter, r *http.Request) {
 	var req struct{ Username, Password string }
 	if !decode(w, r, &req) {
+		return
+	}
+	if strings.TrimSpace(req.Password) == "" {
+		writeError(w, status(store.ErrInvalid), store.ErrInvalid)
 		return
 	}
 	h, err := auth.HashPassword(req.Password)
@@ -195,10 +200,11 @@ func (a *API) updateArticle(w http.ResponseWriter, r *http.Request, id int64) {
 }
 
 func (a *API) deleteArticle(w http.ResponseWriter, r *http.Request, id int64) {
-	if _, ok := a.requireAuth(w, r); !ok {
+	cl, ok := a.requireAuth(w, r)
+	if !ok {
 		return
 	}
-	if err := a.store.DeleteArticle(id); err != nil {
+	if err := a.store.DeleteArticle(id, cl.UserID); err != nil {
 		writeError(w, status(err), err)
 		return
 	}
@@ -239,8 +245,14 @@ func decode(w http.ResponseWriter, r *http.Request, v any) bool {
 	defer func() {
 		_ = r.Body.Close()
 	}()
-	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(v); err != nil {
 		writeError(w, 400, err)
+		return false
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		writeError(w, 400, errors.New("request body must contain a single JSON object"))
 		return false
 	}
 	return true
@@ -259,6 +271,9 @@ func status(err error) int {
 	}
 	if errors.Is(err, store.ErrDuplicate) {
 		return 409
+	}
+	if errors.Is(err, store.ErrForbidden) {
+		return 403
 	}
 	if errors.Is(err, store.ErrInvalid) {
 		return 422

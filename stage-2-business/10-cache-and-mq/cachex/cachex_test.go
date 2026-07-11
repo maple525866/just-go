@@ -138,6 +138,20 @@ func TestJitterTTLSpreadsWithinBounds(t *testing.T) {
 	}
 }
 
+func TestJitterTTLNeverReturnsNonPositiveForPositiveBase(t *testing.T) {
+	if got := JitterTTL(0, 10, "zero"); got != 0 {
+		t.Fatalf("zero base ttl = %s, want 0", got)
+	}
+	if got := JitterTTL(-time.Second, 10, "negative"); got != 0 {
+		t.Fatalf("negative base ttl = %s, want 0", got)
+	}
+	for _, key := range []string{"key0", "key1", "key2", "key3"} {
+		if got := JitterTTL(time.Second, 200, key); got <= 0 {
+			t.Fatalf("jitter ttl for %s = %s, want positive", key, got)
+		}
+	}
+}
+
 func TestSingleFlightLoadsOnce(t *testing.T) {
 	store := NewStore(time.Unix(100, 0))
 	var calls int32
@@ -175,6 +189,84 @@ func TestSingleFlightLoadsOnce(t *testing.T) {
 	}
 }
 
+func TestSingleFlightWaiterRespectsContextCancellation(t *testing.T) {
+	store := NewStore(time.Unix(100, 0))
+	started := make(chan struct{})
+	release := make(chan struct{})
+	loader := func(context.Context, string) (string, bool, error) {
+		close(started)
+		<-release
+		return "shared", true, nil
+	}
+	group := NewSingleFlightCache(store, time.Minute, loader)
+
+	leaderDone := make(chan error, 1)
+	go func() {
+		_, _, err := group.Get(context.Background(), "hot-key")
+		leaderDone <- err
+	}()
+	<-started
+
+	ctx, cancel := context.WithCancel(context.Background())
+	waiterDone := make(chan error, 1)
+	go func() {
+		_, _, err := group.Get(ctx, "hot-key")
+		waiterDone <- err
+	}()
+	cancel()
+
+	select {
+	case err := <-waiterDone:
+		if err != context.Canceled {
+			t.Fatalf("waiter err = %v, want context.Canceled", err)
+		}
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("waiter did not return after context cancellation")
+	}
+
+	close(release)
+	if err := <-leaderDone; err != nil {
+		t.Fatalf("leader err = %v", err)
+	}
+}
+
+func TestSingleFlightCleansUpAfterLoaderPanic(t *testing.T) {
+	store := NewStore(time.Unix(100, 0))
+	var calls int32
+	group := NewSingleFlightCache(store, time.Minute, func(context.Context, string) (string, bool, error) {
+		if atomic.AddInt32(&calls, 1) == 1 {
+			panic("boom")
+		}
+		return "recovered", true, nil
+	})
+
+	func() {
+		defer func() {
+			if recovered := recover(); recovered == nil {
+				t.Fatal("first Get did not panic")
+			}
+		}()
+		_, _, _ = group.Get(context.Background(), "hot-key")
+	}()
+
+	done := make(chan struct{})
+	var got string
+	var ok bool
+	var err error
+	go func() {
+		got, ok, err = group.Get(context.Background(), "hot-key")
+		close(done)
+	}()
+	select {
+	case <-done:
+		if err != nil || !ok || got != "recovered" {
+			t.Fatalf("second Get = %q/%v/%v, want recovered/true/nil", got, ok, err)
+		}
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("second Get blocked after loader panic")
+	}
+}
+
 func TestLockTokenTTLAndRelease(t *testing.T) {
 	store := NewStore(time.Unix(100, 0))
 	lock := NewLockManager(store)
@@ -198,5 +290,32 @@ func TestLockTokenTTLAndRelease(t *testing.T) {
 	store.Advance(2 * time.Second)
 	if ok := lock.Acquire("article:1", "token-b", time.Second); !ok {
 		t.Fatal("token-b failed to acquire expired lock")
+	}
+}
+
+func TestLockRejectsInvalidInputs(t *testing.T) {
+	lock := NewLockManager(NewStore(time.Unix(100, 0)))
+	tests := []struct {
+		name     string
+		resource string
+		token    string
+		ttl      time.Duration
+	}{
+		{name: "empty resource", resource: "", token: "token", ttl: time.Second},
+		{name: "blank resource", resource: "   ", token: "token", ttl: time.Second},
+		{name: "empty token", resource: "resource", token: "", ttl: time.Second},
+		{name: "blank token", resource: "resource", token: "   ", ttl: time.Second},
+		{name: "zero ttl", resource: "resource", token: "token", ttl: 0},
+		{name: "negative ttl", resource: "resource", token: "token", ttl: -time.Second},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if ok := lock.Acquire(tt.resource, tt.token, tt.ttl); ok {
+				t.Fatal("Acquire succeeded for invalid input")
+			}
+		})
+	}
+	if ok := lock.Release("resource", ""); ok {
+		t.Fatal("Release succeeded with empty token")
 	}
 }
