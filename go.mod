@@ -5,6 +5,7 @@ go 1.24
 require (
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/go-playground/validator/v10 v10.27.0
+	github.com/google/wire v0.7.0
 	github.com/mattn/go-sqlite3 v1.14.47
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.2
