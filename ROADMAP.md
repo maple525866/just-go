@@ -252,7 +252,7 @@
   - 依赖倒置：业务核心不依赖外部
   - `wire` 编译期依赖注入
   - 单元测试在分层架构下的玩法（mock 接口）
-- 📦 **本章产出**：_待 OpenSpec change `chapter-12-clean-architecture` 填充_
+- 📦 **本章产出**：可运行的文章发布分层应用、内存仓储与 HTTP 适配器、Wire 编译期依赖注入、mock 测试和架构边界测试
 - 🔗 **前置依赖**：capstone-2
 - ⏱️ **预计耗时**：2 天
 - 📚 **推荐扩展**：[wire](https://github.com/google/wire)、《架构整洁之道》
@@ -356,7 +356,7 @@
 
 ### 阶段三：Go 架构进阶
 
-- [ ] 12-clean-architecture
+- [x] 12-clean-architecture
 - [ ] 13-ddd-patterns
 - [ ] 14-microservices
 - [ ] 15-resilience-perf
