@@ -266,7 +266,7 @@
   - 仓储（Repository）模式
   - 领域事件（Domain Event）与事件发布
   - 应用服务 vs 领域服务
-- 📦 **本章产出**：_待 OpenSpec change `chapter-13-ddd-patterns` 填充_
+- 📦 **本章产出**：可运行的订单聚合示例、Money/Address 值对象、定价领域服务、应用服务、乐观并发仓储、领域事件总线、库存投影及配套测试与练习
 - 🔗 **前置依赖**：12
 - ⏱️ **预计耗时**：3 天
 - 📚 **推荐扩展**：《领域驱动设计》Eric Evans
@@ -357,7 +357,7 @@
 ### 阶段三：Go 架构进阶
 
 - [x] 12-clean-architecture
-- [ ] 13-ddd-patterns
+- [x] 13-ddd-patterns
 - [ ] 14-microservices
 - [ ] 15-resilience-perf
 - [ ] 🚩 capstone-3-blog-ms
