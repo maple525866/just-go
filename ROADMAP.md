@@ -295,7 +295,7 @@
   - 超时与重试策略（指数退避 / 抖动）
   - 性能调优：`pprof` 实战、火焰图、GC 调优
   - 压测：`vegeta` / `wrk`
-- 📦 **本章产出**：_待 OpenSpec change `chapter-15-resilience-perf` 填充_
+- 📦 **本章产出**：可运行的商品详情韧性 Gateway、可控假上游、token bucket 限流、bulkhead 隔离、指数退避重试、`gobreaker` 熔断、显式降级、pprof 示例、生产级方案对照和配套测试与练习
 - 🔗 **前置依赖**：14
 - ⏱️ **预计耗时**：3 天
 - 📚 **推荐扩展**：Netflix Hystrix 论文、《数据密集型应用系统设计》
@@ -359,5 +359,5 @@
 - [x] 12-clean-architecture
 - [x] 13-ddd-patterns
 - [x] 14-microservices
-- [ ] 15-resilience-perf
+- [x] 15-resilience-perf
 - [ ] 🚩 capstone-3-blog-ms
