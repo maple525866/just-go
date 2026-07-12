@@ -31,10 +31,10 @@
 
 ## 5. Composition and Learning Materials
 
-- [ ] 5.1 Write a failing lifecycle test and implement the composition root with random local listeners, registrations, Gateway startup, one aggregate request, and ordered shutdown.
-- [ ] 5.2 Replace the Chapter 14 placeholder README with architecture and sequence diagrams, protocol compatibility rules, RPC-form guidance, discovery/configuration/Gateway boundaries, gRPC-versus-MQ guidance, commands, and explicit production limitations.
-- [ ] 5.3 Add `EXERCISES.md` with measurable acceptance criteria for Consul/etcd adapters, health checking, client streaming, TLS, persistent configuration, distributed limiting, and MQ decoupling.
-- [ ] 5.4 Update the Chapter 14 roadmap output and progress checkbox while leaving Chapter 15 and Capstone 3 incomplete.
+- [x] 5.1 Write a failing lifecycle test and implement the composition root with random local listeners, registrations, Gateway startup, one aggregate request, and ordered shutdown.
+- [x] 5.2 Replace the Chapter 14 placeholder README with architecture and sequence diagrams, protocol compatibility rules, RPC-form guidance, discovery/configuration/Gateway boundaries, gRPC-versus-MQ guidance, commands, and explicit production limitations.
+- [x] 5.3 Add `EXERCISES.md` with measurable acceptance criteria for Consul/etcd adapters, health checking, client streaming, TLS, persistent configuration, distributed limiting, and MQ decoupling.
+- [x] 5.4 Update the Chapter 14 roadmap output and progress checkbox while leaving Chapter 15 and Capstone 3 incomplete.
 
 ## 6. Verification and Review
 

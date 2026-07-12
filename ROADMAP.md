@@ -280,7 +280,7 @@
   - API 网关：基础职责（路由、鉴权、限流、聚合）
   - 配置中心：动态配置 + 灰度
   - 服务间通信模式：同步（gRPC）vs 异步（MQ）
-- 📦 **本章产出**：_待 OpenSpec change `chapter-14-microservices` 填充_
+- 📦 **本章产出**：可运行的商品/库存 gRPC 服务（三种 RPC 形态）+ 服务发现 + 动态配置与灰度 + 带鉴权、限流和聚合的 HTTP Gateway + 完整测试与练习
 - 🔗 **前置依赖**：13
 - ⏱️ **预计耗时**：4 天
 - 📚 **推荐扩展**：[gRPC-Go](https://github.com/grpc/grpc-go)
@@ -358,6 +358,6 @@
 
 - [x] 12-clean-architecture
 - [x] 13-ddd-patterns
-- [ ] 14-microservices
+- [x] 14-microservices
 - [ ] 15-resilience-perf
 - [ ] 🚩 capstone-3-blog-ms
