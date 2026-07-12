@@ -138,6 +138,29 @@ func TestMemoryRegistryWatchCancellationAndClose(t *testing.T) {
 	}
 }
 
+func TestMemoryRegistryCloseStopsBackgroundWatchers(t *testing.T) {
+	registry := NewMemoryRegistry()
+	snapshots, err := registry.Watch(context.Background(), "product")
+	if err != nil {
+		t.Fatal(err)
+	}
+	<-snapshots
+
+	done := make(chan struct{})
+	go func() {
+		registry.watchWG.Wait()
+		close(done)
+	}()
+	if err := registry.Close(); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("background watcher did not stop after Close")
+	}
+}
+
 func TestMemoryRegistrySupportsConcurrentAccess(t *testing.T) {
 	registry := NewMemoryRegistry()
 	defer registry.Close()

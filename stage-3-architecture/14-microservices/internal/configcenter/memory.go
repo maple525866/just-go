@@ -12,6 +12,8 @@ type MemoryStore struct {
 	watchers    map[uint64]chan Snapshot
 	nextWatcher uint64
 	closed      bool
+	done        chan struct{}
+	watchWG     sync.WaitGroup
 }
 
 func NewMemoryStore(initial GatewayConfig) (*MemoryStore, error) {
@@ -22,6 +24,7 @@ func NewMemoryStore(initial GatewayConfig) (*MemoryStore, error) {
 	return &MemoryStore{
 		current:  Snapshot{Version: 1, Config: initial},
 		watchers: make(map[uint64]chan Snapshot),
+		done:     make(chan struct{}),
 	}, nil
 }
 
@@ -68,10 +71,15 @@ func (s *MemoryStore) Watch(ctx context.Context) (<-chan Snapshot, error) {
 	ch := make(chan Snapshot, 1)
 	s.watchers[id] = ch
 	ch <- s.current
+	s.watchWG.Add(1)
 	s.mu.Unlock()
 
 	go func() {
-		<-ctx.Done()
+		defer s.watchWG.Done()
+		select {
+		case <-ctx.Done():
+		case <-s.done:
+		}
 		s.mu.Lock()
 		if current, exists := s.watchers[id]; exists && current == ch {
 			delete(s.watchers, id)
@@ -84,15 +92,19 @@ func (s *MemoryStore) Watch(ctx context.Context) (<-chan Snapshot, error) {
 
 func (s *MemoryStore) Close() error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if s.closed {
+		s.mu.Unlock()
+		s.watchWG.Wait()
 		return nil
 	}
 	s.closed = true
+	close(s.done)
 	for id, ch := range s.watchers {
 		close(ch)
 		delete(s.watchers, id)
 	}
+	s.mu.Unlock()
+	s.watchWG.Wait()
 	return nil
 }
 

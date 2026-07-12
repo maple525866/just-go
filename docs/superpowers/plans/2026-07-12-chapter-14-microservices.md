@@ -445,7 +445,7 @@ git commit -m "feat: add chapter 14 unary grpc services"
 **Interfaces:**
 - Produces: (*Store).Watch(context.Context, string) (<-chan Stock, error).
 - Implements generated InventoryService_WatchStockServer and InventoryService_SyncStockServer handlers.
-- Watch sends the current snapshot first and each later accepted adjustment exactly once; cancellation closes the subscriber channel.
+- Watch sends the current snapshot first, then coalesces unread changes so a slow subscriber receives the latest accepted state; cancellation closes the subscriber channel.
 
 - [ ] **Step 1: Write failing Store.Watch tests**
 
@@ -731,7 +731,7 @@ type Snapshot struct {
 
 - [ ] **Step 4: Write failing memory-store tests**
 
-Cover initial version 1, Current immutable value, valid update increments exactly once, invalid update preserves version, immediate Watch snapshot, ordered updates, canceled watcher, slow watcher, Close, and concurrent Current/Update.
+Cover initial version 1, Current immutable value, valid update increments exactly once, invalid update preserves version, immediate Watch snapshot, latest-only updates for a slow watcher, canceled watcher, Close, and concurrent Current/Update.
 
 ~~~go
 func TestMemoryStoreRejectsInvalidUpdateWithoutAdvancingVersion(t *testing.T) {

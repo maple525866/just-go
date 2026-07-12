@@ -15,12 +15,15 @@ type MemoryRegistry struct {
 	watchers    map[string]map[uint64]chan []Instance
 	nextWatcher uint64
 	closed      bool
+	done        chan struct{}
+	watchWG     sync.WaitGroup
 }
 
 func NewMemoryRegistry() *MemoryRegistry {
 	return &MemoryRegistry{
 		services: make(map[string]map[string]Instance),
 		watchers: make(map[string]map[uint64]chan []Instance),
+		done:     make(chan struct{}),
 	}
 }
 
@@ -100,10 +103,15 @@ func (r *MemoryRegistry) Watch(ctx context.Context, service string) (<-chan []In
 	}
 	r.watchers[service][id] = ch
 	ch <- r.snapshotLocked(service)
+	r.watchWG.Add(1)
 	r.mu.Unlock()
 
 	go func() {
-		<-ctx.Done()
+		defer r.watchWG.Done()
+		select {
+		case <-ctx.Done():
+		case <-r.done:
+		}
 		r.mu.Lock()
 		watchers := r.watchers[service]
 		if current, exists := watchers[id]; exists && current == ch {
@@ -120,17 +128,21 @@ func (r *MemoryRegistry) Watch(ctx context.Context, service string) (<-chan []In
 
 func (r *MemoryRegistry) Close() error {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	if r.closed {
+		r.mu.Unlock()
+		r.watchWG.Wait()
 		return nil
 	}
 	r.closed = true
+	close(r.done)
 	for _, watchers := range r.watchers {
 		for _, ch := range watchers {
 			close(ch)
 		}
 	}
 	r.watchers = make(map[string]map[uint64]chan []Instance)
+	r.mu.Unlock()
+	r.watchWG.Wait()
 	return nil
 }
 

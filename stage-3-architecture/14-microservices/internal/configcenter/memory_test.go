@@ -135,6 +135,32 @@ func TestMemoryStoreCancellationAndClose(t *testing.T) {
 	}
 }
 
+func TestMemoryStoreCloseStopsBackgroundWatchers(t *testing.T) {
+	store, err := NewMemoryStore(validConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	updates, err := store.Watch(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	<-updates
+
+	done := make(chan struct{})
+	go func() {
+		store.watchWG.Wait()
+		close(done)
+	}()
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("background watcher did not stop after Close")
+	}
+}
+
 func TestMemoryStoreSupportsConcurrentAccess(t *testing.T) {
 	store, err := NewMemoryStore(validConfig())
 	if err != nil {

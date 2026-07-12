@@ -207,6 +207,7 @@ openspec validate chapter-14-microservices --strict
 ## ⚖️ 示例边界
 
 - discovery、config center 和 limiter 都是单进程教学适配器，不是生产级分布式实现；
+- `X-Request-Key` 来自客户端，不能作为可信身份；当前 limiter 也不会淘汰长期不用的 key，生产系统应改用鉴权后的主体标识，并增加过期清理或分布式限流；
 - Bearer token 仅演示 Gateway 策略位置，生产系统应使用标准身份协议与安全存储；
 - gRPC 使用明文的本机连接，生产环境应补充 TLS/mTLS、证书轮换与服务身份；
 - 示例没有持久化、健康检查、负载均衡、重试、熔断和可观测性；

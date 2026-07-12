@@ -21,12 +21,23 @@ import (
 )
 
 func run(ctx context.Context, out io.Writer) (retErr error) {
+	return runWithListen(ctx, out, net.Listen)
+}
+
+type listenFunc func(network, address string) (net.Listener, error)
+
+func runWithListen(ctx context.Context, out io.Writer, listen listenFunc) (retErr error) {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if out == nil {
 		return errors.New("output writer is required")
 	}
+	if listen == nil {
+		return errors.New("listen function is required")
+	}
+	requestCtx, cancelRequest := context.WithCancel(ctx)
+	defer cancelRequest()
 
 	var (
 		registry            *discovery.MemoryRegistry
@@ -38,6 +49,7 @@ func run(ctx context.Context, out io.Writer) (retErr error) {
 		deregisterProduct   func() error
 		deregisterInventory func() error
 		serveWG             sync.WaitGroup
+		serveErrors         = make(chan error, 3)
 	)
 	defer func() {
 		var cleanupErrors []error
@@ -106,7 +118,7 @@ func run(ctx context.Context, out io.Writer) (retErr error) {
 		return fmt.Errorf("create config store: %w", err)
 	}
 
-	productListener, err := net.Listen("tcp", "127.0.0.1:0")
+	productListener, err := listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return fmt.Errorf("listen product grpc: %w", err)
 	}
@@ -115,7 +127,9 @@ func run(ctx context.Context, out io.Writer) (retErr error) {
 	serveWG.Add(1)
 	go func() {
 		defer serveWG.Done()
-		_ = productServer.Serve(productListener)
+		if err := productServer.Serve(productListener); !isNormalServeError(err) {
+			serveErrors <- fmt.Errorf("product grpc serve: %w", err)
+		}
 	}()
 	deregisterProduct, err = registry.Register(discovery.Instance{
 		Service: "product", ID: "product-demo", Address: productListener.Addr().String(),
@@ -124,7 +138,7 @@ func run(ctx context.Context, out io.Writer) (retErr error) {
 		return fmt.Errorf("register product: %w", err)
 	}
 
-	inventoryListener, err := net.Listen("tcp", "127.0.0.1:0")
+	inventoryListener, err := listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return fmt.Errorf("listen inventory grpc: %w", err)
 	}
@@ -133,7 +147,9 @@ func run(ctx context.Context, out io.Writer) (retErr error) {
 	serveWG.Add(1)
 	go func() {
 		defer serveWG.Done()
-		_ = inventoryServer.Serve(inventoryListener)
+		if err := inventoryServer.Serve(inventoryListener); !isNormalServeError(err) {
+			serveErrors <- fmt.Errorf("inventory grpc serve: %w", err)
+		}
 	}()
 	deregisterInventory, err = registry.Register(discovery.Instance{
 		Service: "inventory", ID: "inventory-demo", Address: inventoryListener.Addr().String(),
@@ -144,7 +160,7 @@ func run(ctx context.Context, out io.Writer) (retErr error) {
 
 	connections = gateway.NewConnections(gateway.DefaultDial)
 	handler := gateway.NewHandler(configStore, registry, connections, gateway.NewLimiter(nil))
-	httpListener, err := net.Listen("tcp", "127.0.0.1:0")
+	httpListener, err := listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return fmt.Errorf("listen gateway: %w", err)
 	}
@@ -152,37 +168,69 @@ func run(ctx context.Context, out io.Writer) (retErr error) {
 	serveWG.Add(1)
 	go func() {
 		defer serveWG.Done()
-		_ = httpServer.Serve(httpListener)
+		if err := httpServer.Serve(httpListener); !isNormalServeError(err) {
+			serveErrors <- fmt.Errorf("gateway serve: %w", err)
+		}
 	}()
 
+	demoResult := make(chan struct {
+		body []byte
+		err  error
+	}, 1)
+	go func() {
+		body, err := callDemo(requestCtx, httpListener.Addr().String())
+		demoResult <- struct {
+			body []byte
+			err  error
+		}{body: body, err: err}
+	}()
+
+	select {
+	case err := <-serveErrors:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	case result := <-demoResult:
+		if result.err != nil {
+			return result.err
+		}
+		if _, err := out.Write(result.body); err != nil {
+			return fmt.Errorf("write demonstration output: %w", err)
+		}
+		return nil
+	}
+}
+
+func callDemo(ctx context.Context, address string) ([]byte, error) {
 	request, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
-		"http://"+httpListener.Addr().String()+"/api/v1/products/book-1",
+		"http://"+address+"/api/v1/products/book-1",
 		nil,
 	)
 	if err != nil {
-		return fmt.Errorf("create demonstration request: %w", err)
+		return nil, fmt.Errorf("create demonstration request: %w", err)
 	}
 	request.Header.Set("Authorization", "Bearer teaching-token")
 	request.Header.Set("X-Request-Key", "chapter-14-demo")
 	response, err := (&http.Client{Timeout: 2 * time.Second}).Do(request)
 	if err != nil {
-		return fmt.Errorf("call gateway: %w", err)
+		return nil, fmt.Errorf("call gateway: %w", err)
 	}
 	body, readErr := io.ReadAll(response.Body)
 	closeErr := response.Body.Close()
 	if readErr != nil {
-		return fmt.Errorf("read gateway response: %w", readErr)
+		return nil, fmt.Errorf("read gateway response: %w", readErr)
 	}
 	if closeErr != nil {
-		return fmt.Errorf("close gateway response: %w", closeErr)
+		return nil, fmt.Errorf("close gateway response: %w", closeErr)
 	}
 	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("gateway returned %s: %s", response.Status, body)
+		return nil, fmt.Errorf("gateway returned %s: %s", response.Status, body)
 	}
-	if _, err := out.Write(body); err != nil {
-		return fmt.Errorf("write demonstration output: %w", err)
-	}
-	return nil
+	return body, nil
+}
+
+func isNormalServeError(err error) bool {
+	return err == nil || errors.Is(err, grpc.ErrServerStopped) || errors.Is(err, http.ErrServerClosed)
 }

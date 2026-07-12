@@ -5,8 +5,10 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -88,5 +90,78 @@ func TestConnectionsRejectsInvalidInputAndCanceledContext(t *testing.T) {
 	cancel()
 	if _, err := connections.Product(ctx, "127.0.0.1:5001"); !errors.Is(err, context.Canceled) {
 		t.Fatalf("canceled context error = %v", err)
+	}
+}
+
+func TestConnectionsCloseDoesNotWaitForBlockedDial(t *testing.T) {
+	dialStarted := make(chan struct{})
+	releaseDial := make(chan struct{})
+	connections := NewConnections(func(_ context.Context, address string) (*grpc.ClientConn, error) {
+		close(dialStarted)
+		<-releaseDial
+		return grpc.NewClient("passthrough:///"+address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	})
+
+	clientResult := make(chan error, 1)
+	go func() {
+		_, err := connections.Product(context.Background(), "127.0.0.1:5001")
+		clientResult <- err
+	}()
+	<-dialStarted
+
+	closeResult := make(chan error, 1)
+	go func() { closeResult <- connections.Close() }()
+	select {
+	case err := <-closeResult:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Close blocked behind DialFunc")
+	}
+	close(releaseDial)
+	if err := <-clientResult; !errors.Is(err, ErrConnectionsClosed) {
+		t.Fatalf("Product error = %v, want ErrConnectionsClosed", err)
+	}
+}
+
+func TestConnectionsConcurrentDialKeepsOneConnection(t *testing.T) {
+	dialStarted := make(chan *grpc.ClientConn, 2)
+	releaseDial := make(chan struct{})
+	connections := NewConnections(func(_ context.Context, address string) (*grpc.ClientConn, error) {
+		conn, err := grpc.NewClient("passthrough:///"+address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			return nil, err
+		}
+		dialStarted <- conn
+		<-releaseDial
+		return conn, nil
+	})
+	defer connections.Close()
+
+	results := make(chan *grpc.ClientConn, 2)
+	for range 2 {
+		go func() {
+			conn, err := connections.conn(context.Background(), "127.0.0.1:5001")
+			if err != nil {
+				t.Errorf("conn: %v", err)
+			}
+			results <- conn
+		}()
+	}
+	created := []*grpc.ClientConn{<-dialStarted, <-dialStarted}
+	close(releaseDial)
+	first, second := <-results, <-results
+	if first != second {
+		t.Fatal("concurrent callers received different cached connections")
+	}
+	closed := 0
+	for _, conn := range created {
+		if conn.GetState() == connectivity.Shutdown {
+			closed++
+		}
+	}
+	if closed != 1 {
+		t.Fatalf("closed duplicate connections = %d, want 1", closed)
 	}
 }

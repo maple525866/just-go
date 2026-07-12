@@ -91,16 +91,30 @@ func (c *Connections) conn(ctx context.Context, address string) (*grpc.ClientCon
 	}
 
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	if c.closed {
+		c.mu.Unlock()
 		return nil, ErrConnectionsClosed
 	}
 	if conn := c.conns[address]; conn != nil {
+		c.mu.Unlock()
 		return conn, nil
 	}
+	c.mu.Unlock()
+
 	conn, err := c.dial(ctx, address)
 	if err != nil {
 		return nil, err
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.closed {
+		_ = conn.Close()
+		return nil, ErrConnectionsClosed
+	}
+	if existing := c.conns[address]; existing != nil {
+		_ = conn.Close()
+		return existing, nil
 	}
 	c.conns[address] = conn
 	return conn, nil
