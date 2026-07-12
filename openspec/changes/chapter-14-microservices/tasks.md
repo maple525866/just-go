@@ -9,9 +9,9 @@
 - [x] 2.1 Write failing tests and implement a concurrency-safe product catalog with validation and immutable reads.
 - [x] 2.2 Write failing tests and implement `ProductService.GetProduct` with `InvalidArgument` and `NotFound` status mapping.
 - [x] 2.3 Write failing tests and implement inventory reads and adjustments with validation, ordered updates, and concurrent access safety.
-- [ ] 2.4 Write failing tests and implement `InventoryService.GetStock` and `WatchStock`, including cancellation and ordered snapshot delivery.
-- [ ] 2.5 Write failing tests and implement `InventoryService.SyncStock`, including per-request responses, validation failure, EOF, and cancellation.
-- [ ] 2.6 Add a gRPC transport integration test proving unary and streaming clients communicate through serialization rather than direct Go calls.
+- [x] 2.4 Write failing tests and implement `InventoryService.GetStock` and `WatchStock`, including cancellation and ordered snapshot delivery.
+- [x] 2.5 Write failing tests and implement `InventoryService.SyncStock`, including per-request responses, validation failure, EOF, and cancellation.
+- [x] 2.6 Add a gRPC transport integration test proving unary and streaming clients communicate through serialization rather than direct Go calls.
 
 ## 3. Service Discovery and Dynamic Configuration
 

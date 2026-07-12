@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -19,12 +20,17 @@ type Stock struct {
 }
 
 type Store struct {
-	mu    sync.RWMutex
-	stock map[string]Stock
+	mu          sync.RWMutex
+	stock       map[string]Stock
+	watchers    map[string]map[uint64]chan Stock
+	nextWatcher uint64
 }
 
 func NewStore(initial map[string]int64) (*Store, error) {
-	store := &Store{stock: make(map[string]Stock, len(initial))}
+	store := &Store{
+		stock:    make(map[string]Stock, len(initial)),
+		watchers: make(map[string]map[uint64]chan Stock),
+	}
 	for rawSKU, quantity := range initial {
 		sku := strings.TrimSpace(rawSKU)
 		if sku == "" || quantity < 0 {
@@ -71,5 +77,64 @@ func (s *Store) Adjust(sku string, delta int64) (Stock, error) {
 	stock.Quantity += delta
 	stock.Version++
 	s.stock[sku] = stock
+	s.publishLocked(stock)
 	return stock, nil
+}
+
+func (s *Store) Watch(ctx context.Context, sku string) (<-chan Stock, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("%w: context is required", ErrInvalidStock)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	sku = strings.TrimSpace(sku)
+	if sku == "" {
+		return nil, fmt.Errorf("%w: sku is required", ErrInvalidStock)
+	}
+
+	s.mu.Lock()
+	stock, ok := s.stock[sku]
+	if !ok {
+		s.mu.Unlock()
+		return nil, fmt.Errorf("%w: %s", ErrStockNotFound, sku)
+	}
+	s.nextWatcher++
+	id := s.nextWatcher
+	ch := make(chan Stock, 1)
+	if s.watchers[sku] == nil {
+		s.watchers[sku] = make(map[uint64]chan Stock)
+	}
+	s.watchers[sku][id] = ch
+	ch <- stock
+	s.mu.Unlock()
+
+	go func() {
+		<-ctx.Done()
+		s.mu.Lock()
+		watchers := s.watchers[sku]
+		if current, exists := watchers[id]; exists && current == ch {
+			delete(watchers, id)
+			if len(watchers) == 0 {
+				delete(s.watchers, sku)
+			}
+			close(ch)
+		}
+		s.mu.Unlock()
+	}()
+	return ch, nil
+}
+
+func (s *Store) publishLocked(stock Stock) {
+	for _, ch := range s.watchers[stock.SKU] {
+		select {
+		case ch <- stock:
+		default:
+			select {
+			case <-ch:
+			default:
+			}
+			ch <- stock
+		}
+	}
 }
