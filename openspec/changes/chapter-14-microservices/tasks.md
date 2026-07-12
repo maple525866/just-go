@@ -22,12 +22,12 @@
 
 ## 4. HTTP API Gateway
 
-- [ ] 4.1 Write failing tests and implement Bearer authentication plus a documented single-process rate limiter that rejects before downstream calls.
-- [ ] 4.2 Write failing tests and implement dynamic route and rollout middleware using the active configuration snapshot and stable request keys.
-- [ ] 4.3 Write failing tests and implement discovery-backed gRPC connection ownership for product and inventory clients with explicit close behavior.
-- [ ] 4.4 Write failing tests and implement concurrent product-plus-stock aggregation under the configured deadline, rejecting partial results.
-- [ ] 4.5 Write failing tests and implement stable JSON responses plus gRPC-to-HTTP mappings for invalid, missing, unavailable, deadline, and unknown errors without leaking internal text.
-- [ ] 4.6 Add HTTP integration tests for success, authentication, rate limiting, dynamic route changes, rollout decisions, discovery failure, downstream failure, and timeout.
+- [x] 4.1 Write failing tests and implement Bearer authentication plus a documented single-process rate limiter that rejects before downstream calls.
+- [x] 4.2 Write failing tests and implement dynamic route and rollout middleware using the active configuration snapshot and stable request keys.
+- [x] 4.3 Write failing tests and implement discovery-backed gRPC connection ownership for product and inventory clients with explicit close behavior.
+- [x] 4.4 Write failing tests and implement concurrent product-plus-stock aggregation under the configured deadline, rejecting partial results.
+- [x] 4.5 Write failing tests and implement stable JSON responses plus gRPC-to-HTTP mappings for invalid, missing, unavailable, deadline, and unknown errors without leaking internal text.
+- [x] 4.6 Add HTTP integration tests for success, authentication, rate limiting, dynamic route changes, rollout decisions, discovery failure, downstream failure, and timeout.
 
 ## 5. Composition and Learning Materials
 
