@@ -170,12 +170,18 @@ func run(ctx context.Context, out io.Writer) (retErr error) {
 	if err != nil {
 		return fmt.Errorf("call gateway: %w", err)
 	}
-	defer response.Body.Close()
+	body, readErr := io.ReadAll(response.Body)
+	closeErr := response.Body.Close()
+	if readErr != nil {
+		return fmt.Errorf("read gateway response: %w", readErr)
+	}
+	if closeErr != nil {
+		return fmt.Errorf("close gateway response: %w", closeErr)
+	}
 	if response.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(response.Body)
 		return fmt.Errorf("gateway returned %s: %s", response.Status, body)
 	}
-	if _, err := io.Copy(out, response.Body); err != nil {
+	if _, err := out.Write(body); err != nil {
 		return fmt.Errorf("write demonstration output: %w", err)
 	}
 	return nil

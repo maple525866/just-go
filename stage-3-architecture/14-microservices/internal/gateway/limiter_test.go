@@ -8,8 +8,11 @@ import (
 func TestLimiterEnforcesLimitPerKey(t *testing.T) {
 	now := time.Unix(100, 0)
 	limiter := NewLimiter(func() time.Time { return now })
-	if !limiter.Allow("client-a", 2, time.Minute) || !limiter.Allow("client-a", 2, time.Minute) {
-		t.Fatal("allowed requests were rejected")
+	if !limiter.Allow("client-a", 2, time.Minute) {
+		t.Fatal("first allowed request was rejected")
+	}
+	if !limiter.Allow("client-a", 2, time.Minute) {
+		t.Fatal("second allowed request was rejected")
 	}
 	if limiter.Allow("client-a", 2, time.Minute) {
 		t.Fatal("request above limit was allowed")
