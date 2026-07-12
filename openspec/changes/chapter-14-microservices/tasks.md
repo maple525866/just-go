@@ -41,4 +41,4 @@
 - [x] 6.1 Run `gofmt`, Chapter 14 tests, full repository tests, `go vet`, `go build`, race tests, `golangci-lint`, and OpenSpec validation; fix every in-scope failure and record unavailable checks accurately.
 - [x] 6.2 Review the implementation against every OpenSpec scenario and the approved design, and confirm generated files match their protocol sources.
 - [x] 6.3 Dispatch the requested code-review subagent against the full `origin/main...HEAD` change and resolve every Critical or Important finding.
-- [ ] 6.4 Create the requested GitHub issue, link it from the change, push `codex/chapter-14-microservices`, and create a Pull Request against `main` with verification evidence.
+- [x] 6.4 Create the requested GitHub issue, link it from the change, push `codex/chapter-14-microservices`, and create a Pull Request against `main` with verification evidence.
