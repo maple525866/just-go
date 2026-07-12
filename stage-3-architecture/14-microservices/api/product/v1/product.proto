@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package product.v1;
+
+option go_package = "just-go/stage-3-architecture/14-microservices/api/product/v1;productv1";
+
+service ProductService {
+  rpc GetProduct(GetProductRequest) returns (GetProductResponse);
+}
+
+message GetProductRequest {
+  string sku = 1;
+}
+
+message GetProductResponse {
+  string sku = 1;
+  string name = 2;
+  int64 price_cents = 3;
+}

@@ -34,3 +34,6 @@ desktop.ini
 .env
 .env.local
 *.local
+
+# ───── 本地 Git worktree ─────
+/.worktrees/
