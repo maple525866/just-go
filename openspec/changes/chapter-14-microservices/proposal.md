@@ -2,6 +2,8 @@
 
 Stage 3 needs an executable microservices chapter that moves learners from in-process domain boundaries to contract-first network communication. Chapter 14 must replace its placeholder with a tested, self-contained example before the resilience and microservice capstone chapters can build on gRPC, service discovery, API Gateway, and dynamic configuration.
 
+Tracking issue: [#33](https://github.com/maple525866/just-go/issues/33)
+
 ## What Changes
 
 - Replace the Chapter 14 placeholder with runnable product and inventory gRPC services using generated protobuf contracts.
