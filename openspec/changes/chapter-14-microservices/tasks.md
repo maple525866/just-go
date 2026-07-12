@@ -15,8 +15,8 @@
 
 ## 3. Service Discovery and Dynamic Configuration
 
-- [ ] 3.1 Define service instance, registrar, resolver, watcher, unavailable, validation, and closed semantics in a focused discovery contract.
-- [ ] 3.2 Write failing tests and implement concurrency-safe in-memory registration, deterministic resolution, immutable snapshots, deregistration, cancellation, and close behavior.
+- [x] 3.1 Define service instance, registrar, resolver, watcher, unavailable, validation, and closed semantics in a focused discovery contract.
+- [x] 3.2 Write failing tests and implement concurrency-safe in-memory registration, deterministic resolution, immutable snapshots, deregistration, cancellation, and close behavior.
 - [ ] 3.3 Define validated Gateway configuration, versioned snapshot, subscription, and stable rollout-selection contracts.
 - [ ] 3.4 Write failing tests and implement concurrency-safe configuration reads, monotonic updates, non-blocking immutable subscriptions, cancellation, close behavior, and deterministic 0–100 percent rollout.
 
