@@ -3,6 +3,7 @@ package upstream
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -25,7 +26,7 @@ func NewHTTPClient(baseURL string, client *http.Client) *HTTPClient {
 	return &HTTPClient{baseURL: strings.TrimRight(baseURL, "/"), client: client}
 }
 
-func (c *HTTPClient) GetProduct(ctx context.Context, sku string) (Product, error) {
+func (c *HTTPClient) GetProduct(ctx context.Context, sku string) (product Product, retErr error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -47,7 +48,11 @@ func (c *HTTPClient) GetProduct(ctx context.Context, sku string) (Product, error
 		}
 		return Product{}, transportError{err: err}
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("close upstream response: %w", err))
+		}
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var body struct {
@@ -61,7 +66,6 @@ func (c *HTTPClient) GetProduct(ctx context.Context, sku string) (Product, error
 		return Product{}, Error{StatusCode: resp.StatusCode, Temporary: resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500, Message: msg}
 	}
 
-	var product Product
 	if err := json.NewDecoder(resp.Body).Decode(&product); err != nil {
 		return Product{}, fmt.Errorf("decode upstream product: %w", err)
 	}

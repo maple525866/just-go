@@ -192,7 +192,8 @@ func TestHTTPClientTreatsNilContextAsBackground(t *testing.T) {
 			t.Fatalf("GetProduct(nil, ...) panicked: %v", recovered)
 		}
 	}()
-	if _, err := client.GetProduct(nil, "book-1"); err != nil {
+	var ctx context.Context
+	if _, err := client.GetProduct(ctx, "book-1"); err != nil {
 		t.Fatalf("GetProduct with nil context returned error: %v", err)
 	}
 }

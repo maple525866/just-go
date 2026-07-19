@@ -68,7 +68,9 @@ func RunDemo(ctx context.Context, out io.Writer) error {
 	if err := requestDemo(ctx, out, gatewayServer.Client(), gatewayServer.URL+"/api/v1/products/book-1", "rate-limit"); err != nil {
 		return err
 	}
-	fmt.Fprintf(out, "heap-demo bytes=%d\n", profiler.AllocateHotHeap(2, 1024))
+	if _, err := fmt.Fprintf(out, "heap-demo bytes=%d\n", profiler.AllocateHotHeap(2, 1024)); err != nil {
+		return fmt.Errorf("write heap demo output: %w", err)
+	}
 	return nil
 }
 
@@ -81,7 +83,11 @@ func requestDemo(ctx context.Context, out io.Writer, client *http.Client, url st
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	fmt.Fprintf(out, "%s status=%d\n", label, resp.StatusCode)
+	if err := resp.Body.Close(); err != nil {
+		return fmt.Errorf("close %s response: %w", label, err)
+	}
+	if _, err := fmt.Fprintf(out, "%s status=%d\n", label, resp.StatusCode); err != nil {
+		return fmt.Errorf("write %s response status: %w", label, err)
+	}
 	return nil
 }

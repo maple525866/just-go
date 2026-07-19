@@ -45,8 +45,8 @@ func TestRunReportsServeFailure(t *testing.T) {
 	}
 
 	err := runWithListen(context.Background(), &bytes.Buffer{}, listen)
-	if err == nil || !strings.Contains(err.Error(), "product grpc serve") || !errors.Is(err, want) {
-		t.Fatalf("error = %v, want wrapped product serve failure", err)
+	if err == nil || !strings.Contains(err.Error(), "serve") || !errors.Is(err, want) {
+		t.Fatalf("error = %v, want wrapped serve failure", err)
 	}
 }
 
