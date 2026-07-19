@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package blog.v1;
+option go_package = "just-go/stage-3-architecture/capstone-3-blog-ms/api/blog/v1;blogv1";
+
+service UserService {
+  rpc Register(RegisterRequest) returns (AuthResponse);
+  rpc Login(LoginRequest) returns (AuthResponse);
+  rpc ValidateToken(ValidateTokenRequest) returns (User);
+  rpc GetUser(GetUserRequest) returns (User);
+}
+service PostService {
+  rpc CreatePost(CreatePostRequest) returns (Post);
+  rpc GetPost(GetPostRequest) returns (Post);
+  rpc ListPosts(ListPostsRequest) returns (ListPostsResponse);
+  rpc UpdatePost(UpdatePostRequest) returns (Post);
+  rpc DeletePost(DeletePostRequest) returns (Empty);
+}
+service CommentService {
+  rpc CreateComment(CreateCommentRequest) returns (Comment);
+  rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse);
+  rpc DeleteComment(DeleteCommentRequest) returns (Empty);
+}
+
+message Empty {}
+message User { int64 id = 1; string username = 2; }
+message RegisterRequest { string username = 1; string password = 2; }
+message LoginRequest { string username = 1; string password = 2; }
+message ValidateTokenRequest { string token = 1; }
+message GetUserRequest { int64 id = 1; }
+message AuthResponse { User user = 1; string token = 2; }
+
+message Post {
+  int64 id = 1;
+  int64 author_id = 2;
+  string title = 3;
+  string body = 4;
+  repeated string tags = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+message CreatePostRequest { int64 author_id = 1; string title = 2; string body = 3; repeated string tags = 4; }
+message GetPostRequest { int64 id = 1; }
+message ListPostsRequest { string tag = 1; int32 page = 2; int32 page_size = 3; }
+message ListPostsResponse { repeated Post posts = 1; int32 total = 2; int32 page = 3; int32 page_size = 4; }
+message UpdatePostRequest { int64 id = 1; int64 author_id = 2; string title = 3; string body = 4; repeated string tags = 5; bool replace_tags = 6; }
+message DeletePostRequest { int64 id = 1; int64 author_id = 2; }
+
+message Comment {
+  int64 id = 1;
+  int64 post_id = 2;
+  int64 parent_id = 3;
+  int64 author_id = 4;
+  string body = 5;
+  bool deleted = 6;
+  string created_at = 7;
+  repeated Comment replies = 8;
+}
+message CreateCommentRequest { int64 post_id = 1; int64 parent_id = 2; int64 author_id = 3; string body = 4; }
+message ListCommentsRequest { int64 post_id = 1; }
+message ListCommentsResponse { repeated Comment comments = 1; }
+message DeleteCommentRequest { int64 post_id = 1; int64 comment_id = 2; int64 author_id = 3; }
