@@ -1,0 +1,46 @@
+services:
+  user-svc:
+    build:
+      context: ../..
+      dockerfile: stage-3-architecture/capstone-3-blog-ms/Dockerfile
+      args:
+        SERVICE: user-svc
+    environment:
+      USER_ADDR: :9001
+      TOKEN_SECRET: compose-development-secret
+
+  post-svc:
+    build:
+      context: ../..
+      dockerfile: stage-3-architecture/capstone-3-blog-ms/Dockerfile
+      args:
+        SERVICE: post-svc
+    environment:
+      POST_ADDR: :9002
+
+  comment-svc:
+    build:
+      context: ../..
+      dockerfile: stage-3-architecture/capstone-3-blog-ms/Dockerfile
+      args:
+        SERVICE: comment-svc
+    environment:
+      COMMENT_ADDR: :9003
+
+  gateway:
+    build:
+      context: ../..
+      dockerfile: stage-3-architecture/capstone-3-blog-ms/Dockerfile
+      args:
+        SERVICE: gateway
+    environment:
+      GATEWAY_ADDR: :8080
+      USER_TARGET: user-svc:9001
+      POST_TARGET: post-svc:9002
+      COMMENT_TARGET: comment-svc:9003
+    ports:
+      - "8080:8080"
+    depends_on:
+      - user-svc
+      - post-svc
+      - comment-svc

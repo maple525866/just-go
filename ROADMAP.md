@@ -304,7 +304,7 @@
 
 - 🎯 **项目目标**：把 capstone-2 的**单体博客拆成 3 个微服务**（user-svc / post-svc / comment-svc），加网关、链路追踪、容器化部署。
 - 🧩 **综合应用的章节**：12 / 13 / 14 / 15 全套
-- 📦 **本项目产出**：_待 OpenSpec change `capstone-3-blog-ms` 填充_
+- 📦 **本项目产出**：三个独立博客微服务、protobuf/gRPC 合同、HTTP Gateway、端到端 trace、限流/重试/熔断/降级、Docker Compose 和自包含端到端测试
 - 🔗 **前置依赖**：12–15
 - ⏱️ **预计耗时**：7 天
 
@@ -360,4 +360,4 @@
 - [x] 13-ddd-patterns
 - [x] 14-microservices
 - [x] 15-resilience-perf
-- [ ] 🚩 capstone-3-blog-ms
+- [x] 🚩 capstone-3-blog-ms
