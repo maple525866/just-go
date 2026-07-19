@@ -7,6 +7,7 @@ require (
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/google/wire v0.7.0
 	github.com/mattn/go-sqlite3 v1.14.47
+	github.com/sony/gobreaker/v2 v2.4.0
 	google.golang.org/grpc v1.75.1
 	google.golang.org/protobuf v1.36.11
 	gorm.io/driver/sqlite v1.6.0
